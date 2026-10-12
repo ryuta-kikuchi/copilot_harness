@@ -302,72 +302,22 @@ description: VS Codeの配色・テーマ対応・フォーカス表示を実装
 1. **Copilot**が修正を終え、作業を終了しようとする。
 2. **VS Code**が`Stop`のHookを起動する。
 3. **Hookのプログラム**が`npm run lint`を実行する。
-4. **成功なら終了。失敗なら、エラー内容をCopilotへ戻して修正を要求する。**
+4. **成功なら終了。初回の失敗なら、エラー内容をCopilotへ戻して修正を要求する。**
+5. **修正後も再チェックし、失敗なら理由を利用者に示して自動修正を打ち切る。**
 
 **自分のチームでは、既存の軽いチェックを終了前に組み込むところから試せます。**
 
 <small>[Stopの公式仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)を使った運用例です。Lintコマンドはプロジェクトに合わせて用意します。</small>
 
-<!-- 発表メモ：約45秒。毎回の確認依頼を減らし、修正直後に問題を見つける利点から説明する。npm run lintはpackage.jsonに定義済みのlintスクリプトを実行するコマンドで、Copilot固有の機能ではない。Hookのプログラムが直接コマンドを起動するので、モデルがチェック用のツールを選ばなくても実行できる。全てのプロジェクトにlintコマンドがあるわけではない。既存の静的チェックや型チェックなど、そのプロジェクトに合った短時間の確認に置き換える。CIは共有コードに取り込む条件、今回のHookは作業中に修正を促すための確認で、併用できる。 -->
+<!-- 発表メモ：約45秒。毎回の確認依頼を減らし、修正直後に問題を見つける利点から説明する。npm run lintはpackage.jsonに定義済みのlintスクリプトを実行するコマンドで、Copilot固有の機能ではない。Hookのプログラムが直接コマンドを起動するので、モデルがチェック用のツールを選ばなくても実行できる。全てのプロジェクトにlintコマンドがあるわけではない。既存の静的チェックや型チェックなど、そのプロジェクトに合った短時間の確認に置き換える。CIは共有コードに取り込む条件、今回のHookは作業中に修正を促すための確認で、併用できる。再開後の終了前にもチェックを実行し、成功かどうかを実行結果で確認する。修正後も失敗する場合は、エラー内容を利用者に示して自動修正を停止する。 -->
 
 ---
 
-# 6.3 VS CodeからHookへ渡される情報
+# 6.3 Hookの設定：いつ・何を起動するか
 
-**VS Codeは、Hookの起動時にイベント情報をJSONで渡します。** 受け取る経路は標準入力（`stdin`）です。以下は`Stop`の入力の抜粋です。
+**`.github/hooks/`に、設定ファイル`lint.json`と処理本体`check_lint.py`を用意します。**
 
-```json
-{
-  "hook_event_name": "Stop",
-  "stop_hook_active": false
-}
-```
-
-`hook_event_name`はイベント名です。`stop_hook_active`は、**前のStop Hookが終了を止めたため、Copilotが作業を続けているか**を示します。値はVS Codeが付けます。
-
-| 値 | 状態 | 今回のプログラムの動作 |
-|---|---|---|
-| `false` | 通常の終了前 | Lintを実行する |
-| `true` | Stop Hookの継続要求を受け、作業を続けている | チェックと継続要求を省く |
-
-Pythonでは`json.load(sys.stdin)`で辞書`event`に読み込み、`event.get("stop_hook_active")`でこの項目の値を取得します。
-
-<small>JSONの`false`／`true`は、Pythonでは`False`／`True`になります。入力の項目名と型は[公式仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)で定義されています。</small>
-
-<!-- 発表メモ：約45秒。Hookの設定ファイルとは別に、呼び出すたびにVS Codeがイベント情報を標準入力へ渡す。ここでは共通項目のhook_event_nameと、Stop固有のstop_hook_activeを抜粋した。実際の入力にはtimestampや、任意のcwd、session_id、transcript_pathなどもある。stop_hook_activeはLintの合否やHook機能の有効・無効を示す値ではない。前回のStop Hookの継続要求によって作業を続けているかを示す。通常はfalseで、終了を止められた後の継続中はtrue。前回と同じ要求を繰り返して終了を止め続けないよう、今回の例ではtrueなら処理を省く。VS Codeが渡すJSONをjson.loadでPythonの辞書へ変換し、その辞書をeventという変数に保存する。eventはプログラム側で付けた変数名。getは辞書から指定した項目の値を読む操作で、JSONのfalseとtrueはPythonのFalseとTrueになる。入力のhook_event_nameと次の出力のhookEventNameは仕様上の表記が異なるため、それぞれの形式に従う。 -->
-
----
-
-# 6.4 失敗したとき、VS Codeへ何を返すか
-
-**Hookのプログラムは、失敗した場合にVS Codeが定めた形式のJSONを出力します。** JSONは項目名と値で情報を表す形式です。VS Codeが出力を読み、Copilotに作業の継続を要求します。
-
-```json
-{
-  "hookSpecificOutput": {
-    "hookEventName": "Stop",
-    "decision": "block",
-    "reason": "Lintに失敗しました。エラーを修正して再確認してください。"
-  }
-}
-```
-
-- `hookSpecificOutput`：このイベントに対する結果を入れる項目
-- `hookEventName: "Stop"`：作業終了前のイベントに対する結果
-- `decision: "block"`：**今回の終了を止め、Copilotに作業を続けさせる指定**
-- `reason`：Copilotへ渡す理由。実装ではエラー内容も添えます。
-
-<small>出力先は標準出力（プログラムの出力をVS Codeに渡す経路）です。[Stopの判定結果の仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)</small>
-
-<!-- 発表メモ：約45秒。このJSONは利用者の承認を求めるものではなく、今回のエージェント実行を終了させずに継続するための結果。blockはここでは「終了を止める」を意味する仕様上の値。VS CodeがHookを起動し、プログラムがこのJSONを標準出力へ出して正常終了すると、VS Codeが結果を読み取って理由をモデルへ渡す。モデルはその情報を基に修正を続ける。JSONを資料やファイルに書くだけでは動作しない。チェック成功時はこの結果を出さず、Hookから継続を要求しない。 -->
-
----
-
-# 6.5 用意するもの：終了前に起動する設定
-
-**保存先は`.github/hooks/`。設定とPythonプログラムの2ファイルを用意します。**
-
-`lint.json`：作業終了前に、チェック用プログラムを起動する設定。
+以下は`lint.json`の内容です。JSONは、項目名と値で情報を表す形式です。
 
 ```json
 {
@@ -386,19 +336,74 @@ Pythonでは`json.load(sys.stdin)`で辞書`event`に読み込み、`event.get("
 
 <small>Python 3が必要です。`-X utf8`はUTF-8で入出力する指定。Localで`chat.useHooks`が有効か、ワークスペースが信頼されているかを確認します。[設定の公式仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#configuration-format)</small>
 
-<!-- 発表メモ：約35秒。これはVS Codeが読む設定ファイル。前のスライドのJSONは、実行したプログラムからVS Codeへ渡す結果であり、用途が異なる。pythonはPythonの実行環境を起動するコマンドで、check_lint.pyは利用者が用意するプログラム。pythonがPython 3を起動する環境を想定する。python3やpyを使う環境ではコマンドを合わせる。-X utf8で日本語を含む入出力をUTF-8で扱う。cwdをリポジトリのルートに指定し、そこで既存のnpm run lintを実行する。HookのプログラムにはPythonを使い、チェックにはプロジェクトの既存コマンドを使う。Hookの上限15秒に対し、プログラムはチェックを10秒で打ち切る。所要時間に合わせて両方を調整する。この資料ではコード例を示すだけで、有効なHookをリポジトリに追加しない。 -->
+<!-- 発表メモ：約35秒。まず利用者が用意する設定と処理本体を示す。このJSONはVS Codeが読む設定ファイルで、いつ何を起動するかを指定する。この後、VS Codeからプログラムへ渡す入力と、プログラムから返す結果を順に説明する。どちらもJSONだが、項目名や構造はそれぞれの仕様で決まっている。pythonはPythonの実行環境を起動するコマンドで、check_lint.pyは利用者が用意するプログラム。pythonがPython 3を起動する環境を想定する。python3やpyを使う環境ではコマンドを合わせる。-X utf8で日本語を含む入出力をUTF-8で扱う。cwdをリポジトリのルートに指定し、そこで既存のnpm run lintを実行する。HookのプログラムにはPythonを使い、チェックにはプロジェクトの既存コマンドを使う。Hookの上限15秒に対し、6.6・6.7のプログラムはチェックを10秒で打ち切る。所要時間に合わせて両方を調整する。この資料ではコード例を示すだけで、有効なHookをリポジトリに追加しない。 -->
 
 ---
 
-# 6.6 Pythonで書くチェック用プログラム
+# 6.4 VS CodeからHookへ渡される情報
+
+**VS Codeは、Hookの起動時にイベント情報をJSONで渡します。** 受け取る経路は標準入力（`stdin`）です。以下は`Stop`の入力の抜粋です。
+
+```json
+{
+  "hook_event_name": "Stop",
+  "stop_hook_active": false
+}
+```
+
+`hook_event_name`はイベント名です。`stop_hook_active`は、**前のStop Hookが終了を止めたため、Copilotが作業を続けているか**を示します。値はVS Codeが付けます。**どちらの場合もLintを実行し、失敗時の対応を変えます。**
+
+| 値 | 状態 | Lint失敗時の処理 |
+|---|---|---|
+| `false` | 通常の終了前 | Copilotに修正を要求する |
+| `true` | Stop Hookの要求で作業を続けている | 未解消の問題を示し、自動修正を停止する |
+
+Pythonでは`json.load(sys.stdin)`で辞書`event`に読み込み、`event.get("stop_hook_active")`でこの項目の値を取得します。
+
+<small>JSONの`false`／`true`は、Pythonでは`False`／`True`になります。入力の項目名と型は[公式仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)で定義されています。</small>
+
+<!-- 発表メモ：約45秒。Hookの設定ファイルとは別に、呼び出すたびにVS Codeがイベント情報を標準入力へ渡す。ここでは共通項目のhook_event_nameと、Stop固有のstop_hook_activeを抜粋した。実際の入力にはtimestampや、任意のcwd、session_id、transcript_pathなどもある。stop_hook_activeはLintの合否やHook機能の有効・無効を示す値ではない。前回のStop Hookの継続要求によって作業を続けているかを示す。通常はfalseで、終了を止められた後の継続中はtrue。この値は修正やLintが成功したことを示さないため、どちらの場合もチェックを実行する。失敗した場合はfalseなら修正要求、trueなら未解消の問題を通知して自動修正を停止する。修正要求を1回に制限しつつ、再確認を省かない。VS Codeが渡すJSONをjson.loadでPythonの辞書へ変換し、その辞書をeventという変数に保存する。eventはプログラム側で付けた変数名。getは辞書から指定した項目の値を読む操作で、JSONのfalseとtrueはPythonのFalseとTrueになる。入力のhook_event_nameと次の出力のhookEventNameは仕様上の表記が異なるため、それぞれの形式に従う。 -->
+
+---
+
+# 6.5 失敗したとき、VS Codeへ何を返すか
+
+**初回の失敗：終了を止め、Copilotに修正を要求する。** `decision: "block"`が継続の指定、`reason`がCopilotに渡す理由です。
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "Stop",
+    "decision": "block",
+    "reason": "Lintに失敗しました。修正して再確認してください。"
+  }
+}
+```
+
+**再開後も失敗：未解消の問題を利用者に示し、自動修正を打ち切る。** `continue: false`で作業を停止し、`stopReason`を利用者に示します。
+
+```json
+{
+  "continue": false,
+  "stopReason": "Lintが成功しませんでした。自動修正を停止します。"
+}
+```
+
+<small>VS Codeが定めた形式のJSONを標準出力へ返します。実装では理由に実行ログも添えます。[Stopの結果](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)、[共通の出力仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#common-output)</small>
+
+<!-- 発表メモ：約55秒。初回の失敗はStop固有のhookSpecificOutputを返す。hookEventNameは結果がStopに対応することを示す。decisionのblockは今回の終了を止め、reasonをモデルへ渡して作業を続けさせる指定。再開後に再確認しても失敗する場合は、共通出力のcontinueをfalseにしてエージェントの実行を停止する。stopReasonは利用者に示す理由で、成功したものとして終了させず、失敗を明示して人に判断を戻す。両方ともJSONを標準出力へ出した後、Hookプログラム自体は正常終了する。終了コード0はHookの結果を正しく返したという意味で、Lint合格とは別。初回と再開後の区別は入力のstop_hook_activeを使い、自動の修正要求を1回に制限する。成功時は何も返さず終了する。 -->
+
+---
+
+# 6.6 Pythonの実装：入力とLintの実行
+
+**`check_lint.py`の前半です。再開後も、毎回Lintを実行します。**
 
 ```python
 import json
 import subprocess
 import sys
 event = json.load(sys.stdin)  # 入力JSONを辞書eventとして読む
-if event.get("stop_hook_active"):  # Trueなら継続要求済みなので今回は省く
-    sys.exit(0)
 try:  # Lintを実行し、結果を受け取る（上限10秒）
     result = subprocess.run("npm run lint", shell=True, capture_output=True,
                             text=True, timeout=10)
@@ -406,80 +411,46 @@ try:  # Lintを実行し、結果を受け取る（上限10秒）
     error = None if result.returncode == 0 else result.stdout + result.stderr
 except subprocess.TimeoutExpired:
     error = "Lintが10秒以内に完了しませんでした。"
-if error is not None:  # 失敗や時間切れなら、VS Codeへ継続要求を返す
-    print(json.dumps({"hookSpecificOutput": {
-        "hookEventName": "Stop", "decision": "block",
-        "reason": "Lintに失敗。修正して再確認してください。\n" + error
-    }}, ensure_ascii=False))
+if error is None:
+    sys.exit(0)  # Lintが成功したので、継続要求なしで終了する
 ```
 
-**`check_lint.py`として保存します。** 再開後はチェックと継続要求を省き、修正後の再確認はCopilotが行います。
+**失敗や時間切れの場合は、次のスライドの処理へ進みます。** `stop_hook_active`だけで、チェックを省くことはありません。
 
-<small>Pythonの標準ライブラリだけを使用。終了を止め続けるループを防ぐ例です。[Stopの仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)、[subprocess.runの仕様](https://docs.python.org/3/library/subprocess.html#subprocess.run)</small>
+<small>Pythonの標準ライブラリだけを使用します。[subprocess.runの仕様](https://docs.python.org/3/library/subprocess.html#subprocess.run)</small>
 
-<!-- 発表メモ：約50秒。処理は、入力を読む・チェックする・失敗なら結果を返す、という順に説明する。json.load(sys.stdin)でVS Codeから渡されるJSONを読む。stop_hook_activeは前回のHookによって終了を止められ、作業を続けているかを示す。有効ならsys.exit(0)で正常終了し、継続要求を1回に制限する。subprocess.runで既存のlintコマンドを起動する。shell=Trueは固定のコマンド文字列をシェル経由で実行する指定で、Windowsのnpmにも対応する。入力値をコマンド文字列へ組み込まない。capture_output=Trueでチェックの出力を受け取り、text=Trueで文字列として扱う。returncodeが終了コードで、0なら成功。このときerrorはNoneになり、何も出力せず終了する。失敗ならstdoutとstderrの内容を使い、時間切れならその理由を使う。失敗時は出力が空でもJSONを返す。json.dumpsは結果をJSONの文字列にし、printで標準出力へ渡す。ensure_ascii=Falseは日本語をそのまま出力する指定。この例はUTF-8で入出力する設定が前提。再開後はCopilotが修正と再確認を行うので、その実行結果と未解消の問題を利用者が確認する。Lintの合格を保証するとは説明しない。 -->
-
----
-
-# 7. 自分のチームでは何を設定するか
-
-| 必要なこと | 設定するもの |
-|---|---|
-| 全体の規約や検証方針を毎回伝えたい | 共通Instructions |
-| 特定のファイルで必要な注意点を残したい | 対象別Instructions |
-| 作業固有のルール・実装方法・参照先をまとめたい | Skill |
-| イベントが起きたら処理を実行したい | Hookの設定と実行スクリプト |
-
-**検証の役割分担**：確認方法はInstructions／Skillsに記載し、自動実行が必要ならHooksを組み合わせます。実行ログと未確認事項は、利用者が確認します。
-
-<small>VS Codeのプロジェクト規約は公開ファイル、Hooksは公式ドキュメントの設定例を参照しています。</small>
-
-<!-- 発表メモ：約1分。利用者が設定する具体物を整理する。InstructionsやSkillsに書くことと、Hookで起動することを分ける。Hooksはカスタマイズ機能の一つで、テストだけの機能ではない。プロジェクトに既存のCIがあるなら、その確認も併用する。 -->
+<!-- 発表メモ：約40秒。前半はイベント情報を受け取り、既存のnpm run lintを実行する処理。stop_hook_activeがTrueでも必ずチェックし、合否は実行結果で判断する。shell=Trueは固定のコマンドをシェル経由で実行し、Windowsのnpmにも対応する。入力値をコマンド文字列へ組み込まない。capture_output=Trueで標準出力と標準エラー出力を受け取り、text=Trueで文字列として扱う。returncodeの0はLintコマンドの成功。このときだけerrorをNoneにして、Hookから何も要求せずsys.exit(0)で終了する。失敗ならログを、10秒の時間切れならその理由をerrorに入れ、次のスライドの後半へ進む。前半と後半は同じcheck_lint.pyに続けて保存する。 -->
 
 ---
 
-# 8. 導入後に確認すべき点と落とし穴
+# 6.7 Pythonの実装：失敗時の結果を返す
 
-| 起きること | まず確認すること |
-|---|---|
-| Instructionsが効かない | ルールの保存先が `.github/copilot-instructions.md` か、対応する実行環境か |
-| Skillを使ってくれない | `name`、`description`、保存場所、明示的な呼び出し |
-| テストしたと言うが怪しい | **実行したコマンドとログ**を確認する |
-| Hookが動かない | 実行先、設定形式、スクリプトの場所、実行ログを確認する |
-| 毎回同じ誤実装をする | 誤りをInstructions、Skill、テストのどこに残すべきか |
-| 設定ファイルが巨大になる | 共通ルール、対象固有ルール、作業手順に分ける |
+**同じ`check_lint.py`の後半です。前半のコードの直後に続けます。**
 
-Instructions／Skillsへの記載だけで実行は保証されません。Hooksでチェックを起動する場合も、結果を確認します。共有コードに取り込む条件は、CIでも設定できます。
+```python
+if event.get("stop_hook_active"):  # 再開後も失敗なら、自動修正を打ち切る
+    output = {
+        "continue": False,
+        "stopReason": "Lintが成功しませんでした。自動修正を停止します。\n"
+                      + error
+    }
+else:  # 初回の失敗なら、Copilotに修正を要求する
+    output = {"hookSpecificOutput": {
+        "hookEventName": "Stop", "decision": "block",
+        "reason": "Lintに失敗しました。修正して再確認してください。\n" + error
+    }}
+print(json.dumps(output, ensure_ascii=False))  # 結果をVS Codeへ渡す
+```
 
-<small>参考：[対応環境の公式一覧](https://docs.github.com/en/copilot/reference/custom-instructions-support)、[VS CodeのSkill利用](https://code.visualstudio.com/docs/agent-customization/agent-skills)、[Hooksの設定](https://code.visualstudio.com/docs/agent-customization/hooks)</small>
+**どちらも実行ログを添えて返します。** 修正要求を繰り返し続けず、解消できなかった場合は利用者に判断を戻します。
 
-<!-- 発表メモ：約1分20秒。Copilot ChatにはAgentやAskなどのモードがある。ファイル操作やコマンド実行が必要ならAgentモードを使う。組織のポリシーや権限により、利用できるツールが少ない場合がある。 -->
+<small>Hookプログラムは結果を返して正常終了します。VS CodeはJSONの内容に従って動作します。[入力・出力仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference)</small>
 
----
-
-# 8.1 配色の例：実行結果と未確認事項を分ける
-
-**背景**：テストが通っても、明るい表示・暗い表示で文字や枠が見やすいかを確認できたとは限りません。
-
-**Copilotの報告で確認すること**
-
-| 項目 | 確認する内容 |
-|---|---|
-| 実行内容 | どのタスクやコマンドを実行し、何を対象にしたか |
-| 実行結果 | ログにエラーがないか、対象テストが実際に実行されたか |
-| 画面の確認 | テーマを切り替えた表示を確認したか。未確認ならその旨を報告する |
-
-**人が確認する場面もあります。** 表示確認が実行できない場合は、利用者がVS Codeを起動してテーマを切り替え、文字や境界が見えるかを確認します。
-
-**終了コード**はプログラムが返す数値で、多くのコマンドでは0が成功です。ただし、成功したチェックの範囲と、まだ確認していないことを区別します。
-
-<small>参照：[配色・高コントラスト対応のSkill](https://github.com/microsoft/vscode/blob/main/.github/skills/ux-theming/SKILL.md)。表示確認と報告の整理は、この実例を基にした運用上の提案です。</small>
-
-<!-- 発表メモ：約40秒。実行ログで事実を確認する。0件のテストが実行されただけでも成功表示になるツールがあるので対象も見る。画面を確認していない場合は「テスト成功・表示は未確認」と分けて報告する。実際の画面では明暗に加え、Skillが扱う高コントラストで文字や枠が見えるかも確認する。実行や表示確認を実施したという結果はこの資料では示していない。 -->
+<!-- 発表メモ：約40秒。この後半に到達した時点でLintは失敗または時間切れになっている。stop_hook_activeがFalseなら初回の失敗として修正を要求し、Trueならすでに終了を止められて作業を続けた後なので自動修正を停止する。停止した理由と実行ログを利用者に示すため、無言で終了させることはない。出力が空の失敗でも、理由の文を含むJSONを必ず返す。PythonのFalseはjson.dumpsによってJSONのfalseになり、ensure_ascii=Falseで日本語をそのまま出力する。6.3のUTF-8設定と組み合わせる。printで標準出力へ渡した後、プログラムは末尾に到達して正常終了する。Lintの合否とHookプログラムの終了コードを区別する。前半と後半を同じファイルに続けて保存する。 -->
 
 ---
 
-# 9. 来週からチームで試すなら
+# 7. 来週からチームで試すなら
 
 ### 小さく始める3ステップ
 
