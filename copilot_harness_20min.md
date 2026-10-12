@@ -1,18 +1,3 @@
----
-marp: true
-theme: default
-paginate: true
-size: 16:9
-style: |
-  section { font-family: 'Yu Gothic', 'Meiryo', 'Noto Sans JP', sans-serif; font-size: 29px; line-height: 1.33; }
-  section h1 { color: #174a70; font-size: 1.5em; }
-  section h2 { color: #174a70; }
-  section pre { font-size: 0.61em; line-height: 1.24; }
-  section table { font-size: 0.70em; }
-  section small, section footer { color: #666; }
-  section blockquote { font-size: .88em; }
----
-
 # 1. ルールや作業手順を共有しない場合の課題
 
 Copilotにコードの修正を依頼すると、次のような問題が起こることがあります。
@@ -25,8 +10,6 @@ Copilotにコードの修正を依頼すると、次のような問題が起こ�
 **一因は、プロジェクト固有のルールや確認手順が、チャットをまたいで参照できる形で残されていないことです。**
 
 <!-- 発表メモ：約1分20秒。チームが暗黙に知っているルールを毎回説明する負担に加え、一度説明して解消した認識のずれが別の依頼でも再発する点を取り上げる。チャットでの補足を再利用できる指示や手順に残すと、以後の作業でも参照できる。次のスライドで、そのための周辺環境をハーネスとして説明する。 -->
-
----
 
 # 2. ハーネスとは、AIが作業するための周辺環境
 
@@ -42,11 +25,9 @@ Copilotにコードの修正を依頼すると、次のような問題が起こ�
 
 Hooksは、設定したイベントで処理を起動します。「その処理を実行するか」をLLMの判断に委ねない点が異なります。
 
-<small>出典：[VS Codeのカスタマイズの考え方](https://code.visualstudio.com/docs/agents/concepts/customization)。ハーネスの設定は、この3機能以外にもあります。</small>
+出典：[VS Codeのカスタマイズの考え方](https://code.visualstudio.com/docs/agents/concepts/customization)。ハーネスの設定は、この3機能以外にもあります。
 
 <!-- 発表メモ：約1分。ハーネス全体はInstructionsとSkillsを書くことだけではない。ここでは利用者が設定する入口として3機能を選ぶ。指示をモデルが解釈することと、イベントで処理が起動することを区別する。Hooksの処理自体の成功や、コードの正しさを保証する意味ではない。 -->
-
----
 
 # 3. 全体像：何をどこに設定するか
 
@@ -60,11 +41,9 @@ Hooksは、設定したイベントで処理を起動します。「その処理
 
 InstructionsとSkillsはVS Codeの公開リポジトリ、HooksはVS Code公式ドキュメントの設定例で説明します。
 
-<small>出典：[カスタマイズの全体像](https://code.visualstudio.com/docs/agents/concepts/customization)、[Hooksの設定](https://code.visualstudio.com/docs/agent-customization/hooks)。対応機能や設定形式は実行環境で異なります。</small>
+出典：[カスタマイズの全体像](https://code.visualstudio.com/docs/agents/concepts/customization)、[Hooksの設定](https://code.visualstudio.com/docs/agent-customization/hooks)。対応機能や設定形式は実行環境で異なります。
 
 <!-- 発表メモ：約1分20秒。検証を独立した第三の設定と呼ばず、InstructionsやSkillsに検証方針を残し、必要ならHooksで確認処理を起動する関係を説明する。HooksはVS Codeの公開リポジトリで実運用されている例ではなく、公式ドキュメントの例を扱う。 -->
-
----
 
 # 3.1 ほかのカスタマイズ機能
 
@@ -76,11 +55,9 @@ InstructionsとSkillsはVS Codeの公開リポジトリ、HooksはVS Code公式�
 
 **まず困っていることに合う機能から始めます。** プロジェクトの前提不足ならInstructions、作業固有の知識ならSkills、イベントでの実行ならHooksを選びます。
 
-<small>出典：[VS Codeのカスタマイズ一覧](https://code.visualstudio.com/docs/agents/concepts/customization)。関連する設定をまとめて配布するPluginsもあります。</small>
+出典：[VS Codeのカスタマイズ一覧](https://code.visualstudio.com/docs/agents/concepts/customization)。関連する設定をまとめて配布するPluginsもあります。
 
 <!-- 発表メモ：約30秒。機能の存在と用途だけを紹介する。MCPは外部のツールを使えるようにする接続の仕組みで、作業手順を記載するSkillとは役割が異なる。全てを最初から追加する必要はない。 -->
-
----
 
 # 4. Instructions：プロジェクトの前提を継続的に伝える
 
@@ -97,11 +74,9 @@ InstructionsとSkillsはVS Codeの公開リポジトリ、HooksはVS Code公式�
 
 **自分のチームでは**：毎回言い直している具体的な注意点から、短く書き始めます。
 
-<small>仕様：[GitHub公式 リポジトリInstructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)</small>
+仕様：[GitHub公式 リポジトリInstructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)
 
 <!-- 発表メモ：約1分20秒。まず指示書の役割と共通版・対象別版を説明する。具体例は次からのVS Codeの公開ファイルに一本化する。一般論よりも、そのプロジェクトで間違えやすいことと確認方法を残す。規約が多い場合はdocsへの参照や対象別Instructionsを利用する。 -->
-
----
 
 # 4.1 共通Instructionsの実例：VS Code
 
@@ -122,11 +97,9 @@ InstructionsとSkillsはVS Codeの公開リポジトリ、HooksはVS Code公式�
 
 **「共通」は、そのリポジトリ全体に適用するという意味です。** コードの規約と、変更後の確認方法を同じ指示書に残せます。
 
-<small>出典：[VS Codeの共通Instructions](https://github.com/microsoft/vscode/blob/main/.github/copilot-instructions.md)。本文は原文の日本語要約・抜粋。</small>
+出典：[VS Codeの共通Instructions](https://github.com/microsoft/vscode/blob/main/.github/copilot-instructions.md)。本文は原文の日本語要約・抜粋。
 
 <!-- 発表メモ：約1分20秒。共通Instructionsにはコードの規約と検証方針の両方を書く。検証は独立した設定機能ではなく、この指示書に残す内容の一つ。原文にはフォルダーの役割や設計の説明も含まれる。camelCaseは先頭を小文字にし、単語の区切りを大文字で表す命名方式。テストはコードの動作を確認するプログラムで、変更した機能に関連するものを選んで実行する。広い範囲や型・ビルド設定の変更では、必要に応じて型チェックやビルドも行う。共通はVS Code内の共通方針で、次は対象別の確認方法へ進む。実演は行わない。 -->
-
----
 
 # 4.2 対象別Instructionsの実例：ビルド処理の確認
 
@@ -138,17 +111,15 @@ InstructionsとSkillsはVS Codeの公開リポジトリ、HooksはVS Code公式�
 
 **Instructionsを書く理由**：「変更を確認して」だけでは、どの処理を動かすべきかをエージェントが判断する必要があります。そこで、不要なタスクと使うべきコマンドを明記します。
 
-<small>出典：[VS Code - Buildのタスク定義](https://github.com/microsoft/vscode/blob/main/.vscode/tasks.json)、[変更の検証に関するInstructions](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md#important-validating-changes)</small>
+出典：[VS Code - Buildのタスク定義](https://github.com/microsoft/vscode/blob/main/.vscode/tasks.json)、[変更の検証に関するInstructions](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md#important-validating-changes)
 
 <!-- 発表メモ：約35秒。初めにVS Code - Buildが何を指すか説明する。これはVS Code本体の変換と型チェック、拡張機能、Copilotのビルドをまとめて起動する開発用タスクで、配布物作成までの全工程という意味ではない。今回の変更対象はビルドスクリプト。原文では、これらのスクリプトはNode.jsで直接実行でき、本体のビルドでコンパイルされないと説明している。確認に必要な処理を具体的に伝え、エージェントが確認方法を推測する負担を減らすのが指示の意義。実際にエージェントが不要なタスクを実行したという経緯や所要時間は原文に記載がないため断定しない。 -->
-
----
 
 # 4.2.1 対象別Instructionsのファイル内容
 
 **前のスライドの確認方法を、エージェントが読むMarkdownの指示書にします。** 対象ファイルと、実行してほしいコマンドを記載します。
 
-<small>`.github/instructions/buildNext.instructions.md`（原文の日本語要約・抜粋）</small>
+`.github/instructions/buildNext.instructions.md`（原文の日本語要約・抜粋）
 
 ````markdown
 ---
@@ -165,11 +136,9 @@ node build/next/index.ts transpile --out out-test
 - **適用範囲**：`applyTo`で指定した`build/next/`内のファイル。
 - **指示本文**：まとめて起動するビルドタスクは不要と伝え、変換工程を直接実行するコマンドを示します。
 
-<small>出典：[buildNext.instructions.md — Validating Changes](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md#important-validating-changes)。実ファイルにはbundleの検証コマンドも記載。</small>
+出典：[buildNext.instructions.md — Validating Changes](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md#important-validating-changes)。実ファイルにはbundleの検証コマンドも記載。
 
 <!-- 発表メモ：約30秒。背景を説明した後に指示ファイルの具体例を読む。原文の一部を日本語で要約し、descriptionやほかの説明は省略している。applyToが適用範囲、その下がCopilotに渡す指示本文。タスク名が前のスライドで説明したものだと結び付ける。次のスライドでコマンドの意味と確認範囲を説明する。実演は行わない。 -->
-
----
 
 # 4.2.2 指定した確認コマンドの動き
 
@@ -189,11 +158,9 @@ node build/next/index.ts transpile --out out-test
 
 **省くのは他のビルド工程です。1ファイルだけで確認を済ませる意味ではありません。** 結合処理やアプリの動作は、変更内容に応じて別途確認します。
 
-<small>出典：[コマンドの選択処理](https://github.com/microsoft/vscode/blob/main/build/next/index.ts)、[対象ファイルの列挙と変換](https://github.com/microsoft/vscode/blob/main/build/next/index.ts#L398-L416)</small>
+出典：[コマンドの選択処理](https://github.com/microsoft/vscode/blob/main/build/next/index.ts)、[対象ファイルの列挙と変換](https://github.com/microsoft/vscode/blob/main/build/next/index.ts#L398-L416)
 
 <!-- 発表メモ：約50秒。TypeScriptは型などの記述を加えたJavaScriptで、ここでは実行用のJavaScriptに変換する。index.tsは変換対象の入口ではなく、処理を起動して選ぶためのスクリプト。名前に特別な自動変換機能があるわけではない。実装がソースフォルダーを走査して対象ファイルを列挙する。依存ファイルを芋づる式にたどる説明はしない。make transpileのように必要な工程を選ぶ、と説明する。全タスクが必ず全工程を実行するわけではない。この変換コマンドだけで結合処理やアプリの動作まで確認したことにはならない。実演は行わない。 -->
-
----
 
 # 5. Agent Skills：特定作業のルールと手順をまとめる
 
@@ -205,11 +172,9 @@ Copilotでは、リポジトリの`.github/skills/名前/SKILL.md`などに配�
 
 次のVS Codeの実例では、画面の配色を実装・修正するときに必要なルールと具体的な実装方法を、一つのSkillにまとめています。
 
-<small>仕様：[GitHub公式 Agent Skills](https://code.visualstudio.com/docs/agent-customization/agent-skills)。読み込みや手順の実行は、実際のログで確認します。</small>
+仕様：[GitHub公式 Agent Skills](https://code.visualstudio.com/docs/agent-customization/agent-skills)。読み込みや手順の実行は、実際のログで確認します。
 
 <!-- 発表メモ：約1分20秒。Skillの入口と本文の構成を説明した後、VS Codeの配色作業の背景、具体的なファイルの順に進む。作業固有の制約や実装方法をまとめられ、Instructionsと一部重複してもよい。必要なら使うSkillを依頼文に明記する。 -->
-
----
 
 # 5.1 VS CodeのSkill実例：配色とテーマ対応
 
@@ -223,11 +188,9 @@ Copilotでは、リポジトリの`.github/skills/名前/SKILL.md`などに配�
 
 **依頼例**：「このパネルの背景を、明るい表示・暗い表示のどちらにも対応するように修正して」
 
-<small>出典：[ux-theming/SKILL.md](https://github.com/microsoft/vscode/blob/main/.github/skills/ux-theming/SKILL.md)。白い背景と依頼文は、用途を説明するための例です。</small>
+出典：[ux-theming/SKILL.md](https://github.com/microsoft/vscode/blob/main/.github/skills/ux-theming/SKILL.md)。白い背景と依頼文は、用途を説明するための例です。
 
 <!-- 発表メモ：約1分20秒。背景、起こる問題、VS Codeの仕組み、Skillの役割、依頼例の順に説明する。テーマは利用者が選ぶ配色設定。固定の色を直接書くと切り替わらないため、テーマが部品ごとに用意する色を使う。全ての部品に同じ背景色を使う意味ではない。実ファイルはこの使い方に加え、キーボード操作の対象の表示や高コントラストへの対応も説明する。次のスライドで具体的なSkillの記載を示す。 -->
-
----
 
 # 5.2 VS Codeの実例：SKILL.mdに何を書くか
 
@@ -250,11 +213,9 @@ description: VS Codeの配色・テーマ対応・フォーカス表示を実装
 
 **読み取れる点**：Skillは作業手順だけでなく、その作業で守るルールや実装知識もまとめられます。
 
-<small>出典：[実際のSKILL.md](https://github.com/microsoft/vscode/blob/main/.github/skills/ux-theming/SKILL.md)。descriptionと本文は要約。フォーカス表示は、キーボード操作の対象を示す表示です。</small>
+出典：[実際のSKILL.md](https://github.com/microsoft/vscode/blob/main/.github/skills/ux-theming/SKILL.md)。descriptionと本文は要約。フォーカス表示は、キーボード操作の対象を示す表示です。
 
 <!-- 発表メモ：約40秒。これは公開Skillの内容を日本語で短く要約した抜粋で、実ファイルの全文ではない。4種類はlight、dark、hcDark、hcLight。実ファイルには色の登録コード、CSSでの参照例、部品の標準スタイル、フォーカス表示の実装例、参照ファイル一覧がある。テストを必ず実行するためのSkillというより、配色作業で必要なルールと実装方法をまとめたSkill。InstructionsとSkillsの内容が重なり得ることも説明する。 -->
-
----
 
 # 6. Hooks：イベントをきっかけに処理を起動する
 
@@ -268,11 +229,9 @@ description: VS Codeの配色・テーマ対応・フォーカス表示を実装
 
 **イベントを検知してプログラムを起動するのは、VS Code側の実行環境です。** チェックの起動を、AIモデルの判断に委ねずに組み込めます。
 
-<small>この章はVS Code拡張機能側で動くLocalを例に説明します。[Hooksの公式説明](https://code.visualstudio.com/docs/agent-customization/hooks)。実行先によって設定・入出力の仕様が異なります。</small>
+この章はVS Code拡張機能側で動くLocalを例に説明します。[Hooksの公式説明](https://code.visualstudio.com/docs/agent-customization/hooks)。実行先によって設定・入出力の仕様が異なります。
 
 <!-- 発表メモ：約35秒。作業の最後にコードのチェックを自動実行する用途を示す。イベントは実行環境が検知する節目、設定はタイミングとコマンド、プログラムは実際の処理を担う。InstructionsやSkillsに確認方法を残すことに加えて、チェックの起動をHookとして設定できる。実行環境が起動することと、チェックの合格は区別する。ここで説明するのはLocalの仕様で、別の実行先にはそのまま適用しない。 -->
-
----
 
 # 6.1 Hookが働くイベントの代表例
 
@@ -287,11 +246,9 @@ description: VS Codeの配色・テーマ対応・フォーカス表示を実装
 
 **ツールは、ファイルの編集やコマンド実行などに使う操作機能です。** 今回は、作業終了前の`Stop`を使います。
 
-<small>VS Code Localの代表例。Stopはチャット全体の終了とは限りません。[イベントの公式一覧](https://code.visualstudio.com/docs/agent-customization/hooks#local-hook-lifecycle-events)</small>
+VS Code Localの代表例。Stopはチャット全体の終了とは限りません。[イベントの公式一覧](https://code.visualstudio.com/docs/agent-customization/hooks#local-hook-lifecycle-events)
 
 <!-- 発表メモ：約40秒。SessionStartでは、その時点のプロジェクト情報などを追加できる。固定の規約はInstructionsに書く。PostToolUseはツール呼び出しが正常に終わった後に起きるが、ターミナルで実行したテストの合格を意味するとは限らない。整形例では編集ツールと対象ファイルを判定する処理が必要。Stopは今回のエージェント実行を終える前で、チャットを閉じるタイミングではない。ツールの詳細な一覧は今回の例には不要なので省き、Stopの具体例へ進む。 -->
-
----
 
 # 6.2 実用例：作業終了前にLintを自動実行する
 
@@ -307,11 +264,9 @@ description: VS Codeの配色・テーマ対応・フォーカス表示を実装
 
 **自分のチームでは、既存の軽いチェックを終了前に組み込むところから試せます。**
 
-<small>[Stopの公式仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)を使った運用例です。Lintコマンドはプロジェクトに合わせて用意します。</small>
+[Stopの公式仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)を使った運用例です。Lintコマンドはプロジェクトに合わせて用意します。
 
 <!-- 発表メモ：約45秒。毎回の確認依頼を減らし、修正直後に問題を見つける利点から説明する。npm run lintはpackage.jsonに定義済みのlintスクリプトを実行するコマンドで、Copilot固有の機能ではない。Hookのプログラムが直接コマンドを起動するので、モデルがチェック用のツールを選ばなくても実行できる。全てのプロジェクトにlintコマンドがあるわけではない。既存の静的チェックや型チェックなど、そのプロジェクトに合った短時間の確認に置き換える。CIは共有コードに取り込む条件、今回のHookは作業中に修正を促すための確認で、併用できる。再開後の終了前にもチェックを実行し、成功かどうかを実行結果で確認する。修正後も失敗する場合は、エラー内容を利用者に示して自動修正を停止する。 -->
-
----
 
 # 6.3 Hookの設定：いつ・何を起動するか
 
@@ -334,11 +289,9 @@ description: VS Codeの配色・テーマ対応・フォーカス表示を実装
 
 **`Stop`が起動するタイミング、`command`が起動するコマンドです。** `cwd`は実行する場所で、ここではリポジトリのルート。`timeout`は待つ時間の上限（秒）です。
 
-<small>Python 3が必要です。`-X utf8`はUTF-8で入出力する指定。Localで`chat.useHooks`が有効か、ワークスペースが信頼されているかを確認します。[設定の公式仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#configuration-format)</small>
+Python 3が必要です。`-X utf8`はUTF-8で入出力する指定。Localで`chat.useHooks`が有効か、ワークスペースが信頼されているかを確認します。[設定の公式仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#configuration-format)
 
 <!-- 発表メモ：約35秒。まず利用者が用意する設定と処理本体を示す。このJSONはVS Codeが読む設定ファイルで、いつ何を起動するかを指定する。この後、VS Codeからプログラムへ渡す入力と、プログラムから返す結果を順に説明する。どちらもJSONだが、項目名や構造はそれぞれの仕様で決まっている。pythonはPythonの実行環境を起動するコマンドで、check_lint.pyは利用者が用意するプログラム。pythonがPython 3を起動する環境を想定する。python3やpyを使う環境ではコマンドを合わせる。-X utf8で日本語を含む入出力をUTF-8で扱う。cwdをリポジトリのルートに指定し、そこで既存のnpm run lintを実行する。HookのプログラムにはPythonを使い、チェックにはプロジェクトの既存コマンドを使う。Hookの上限15秒に対し、6.6・6.7のプログラムはチェックを10秒で打ち切る。所要時間に合わせて両方を調整する。この資料ではコード例を示すだけで、有効なHookをリポジトリに追加しない。 -->
-
----
 
 # 6.4 VS CodeからHookへ渡される情報
 
@@ -360,11 +313,9 @@ description: VS Codeの配色・テーマ対応・フォーカス表示を実装
 
 Pythonでは`json.load(sys.stdin)`で辞書`event`に読み込み、`event.get("stop_hook_active")`でこの項目の値を取得します。
 
-<small>JSONの`false`／`true`は、Pythonでは`False`／`True`になります。入力の項目名と型は[公式仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)で定義されています。</small>
+JSONの`false`／`true`は、Pythonでは`False`／`True`になります。入力の項目名と型は[公式仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)で定義されています。
 
 <!-- 発表メモ：約45秒。Hookの設定ファイルとは別に、呼び出すたびにVS Codeがイベント情報を標準入力へ渡す。ここでは共通項目のhook_event_nameと、Stop固有のstop_hook_activeを抜粋した。実際の入力にはtimestampや、任意のcwd、session_id、transcript_pathなどもある。stop_hook_activeはLintの合否やHook機能の有効・無効を示す値ではない。前回のStop Hookの継続要求によって作業を続けているかを示す。通常はfalseで、終了を止められた後の継続中はtrue。この値は修正やLintが成功したことを示さないため、どちらの場合もチェックを実行する。失敗した場合はfalseなら修正要求、trueなら未解消の問題を通知して自動修正を停止する。修正要求を1回に制限しつつ、再確認を省かない。VS Codeが渡すJSONをjson.loadでPythonの辞書へ変換し、その辞書をeventという変数に保存する。eventはプログラム側で付けた変数名。getは辞書から指定した項目の値を読む操作で、JSONのfalseとtrueはPythonのFalseとTrueになる。入力のhook_event_nameと次の出力のhookEventNameは仕様上の表記が異なるため、それぞれの形式に従う。 -->
-
----
 
 # 6.5 失敗したとき、VS Codeへ何を返すか
 
@@ -389,11 +340,9 @@ Pythonでは`json.load(sys.stdin)`で辞書`event`に読み込み、`event.get("
 }
 ```
 
-<small>VS Codeが定めた形式のJSONを標準出力へ返します。実装では理由に実行ログも添えます。[Stopの結果](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)、[共通の出力仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#common-output)</small>
+VS Codeが定めた形式のJSONを標準出力へ返します。実装では理由に実行ログも添えます。[Stopの結果](https://code.visualstudio.com/docs/agents/reference/hooks-reference#stop)、[共通の出力仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference#common-output)
 
 <!-- 発表メモ：約55秒。初回の失敗はStop固有のhookSpecificOutputを返す。hookEventNameは結果がStopに対応することを示す。decisionのblockは今回の終了を止め、reasonをモデルへ渡して作業を続けさせる指定。再開後に再確認しても失敗する場合は、共通出力のcontinueをfalseにしてエージェントの実行を停止する。stopReasonは利用者に示す理由で、成功したものとして終了させず、失敗を明示して人に判断を戻す。両方ともJSONを標準出力へ出した後、Hookプログラム自体は正常終了する。終了コード0はHookの結果を正しく返したという意味で、Lint合格とは別。初回と再開後の区別は入力のstop_hook_activeを使い、自動の修正要求を1回に制限する。成功時は何も返さず終了する。 -->
-
----
 
 # 6.6 Pythonの実装：入力とLintの実行
 
@@ -417,11 +366,9 @@ if error is None:
 
 **失敗や時間切れの場合は、次のスライドの処理へ進みます。** `stop_hook_active`だけで、チェックを省くことはありません。
 
-<small>Pythonの標準ライブラリだけを使用します。[subprocess.runの仕様](https://docs.python.org/3/library/subprocess.html#subprocess.run)</small>
+Pythonの標準ライブラリだけを使用します。[subprocess.runの仕様](https://docs.python.org/3/library/subprocess.html#subprocess.run)
 
 <!-- 発表メモ：約40秒。前半はイベント情報を受け取り、既存のnpm run lintを実行する処理。stop_hook_activeがTrueでも必ずチェックし、合否は実行結果で判断する。shell=Trueは固定のコマンドをシェル経由で実行し、Windowsのnpmにも対応する。入力値をコマンド文字列へ組み込まない。capture_output=Trueで標準出力と標準エラー出力を受け取り、text=Trueで文字列として扱う。returncodeの0はLintコマンドの成功。このときだけerrorをNoneにして、Hookから何も要求せずsys.exit(0)で終了する。失敗ならログを、10秒の時間切れならその理由をerrorに入れ、次のスライドの後半へ進む。前半と後半は同じcheck_lint.pyに続けて保存する。 -->
-
----
 
 # 6.7 Pythonの実装：失敗時の結果を返す
 
@@ -444,11 +391,9 @@ print(json.dumps(output, ensure_ascii=False))  # 結果をVS Codeへ渡す
 
 **どちらも実行ログを添えて返します。** 修正要求を繰り返し続けず、解消できなかった場合は利用者に判断を戻します。
 
-<small>Hookプログラムは結果を返して正常終了します。VS CodeはJSONの内容に従って動作します。[入力・出力仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference)</small>
+Hookプログラムは結果を返して正常終了します。VS CodeはJSONの内容に従って動作します。[入力・出力仕様](https://code.visualstudio.com/docs/agents/reference/hooks-reference)
 
 <!-- 発表メモ：約40秒。この後半に到達した時点でLintは失敗または時間切れになっている。stop_hook_activeがFalseなら初回の失敗として修正を要求し、Trueならすでに終了を止められて作業を続けた後なので自動修正を停止する。停止した理由と実行ログを利用者に示すため、無言で終了させることはない。出力が空の失敗でも、理由の文を含むJSONを必ず返す。PythonのFalseはjson.dumpsによってJSONのfalseになり、ensure_ascii=Falseで日本語をそのまま出力する。6.3のUTF-8設定と組み合わせる。printで標準出力へ渡した後、プログラムは末尾に到達して正常終了する。Lintの合否とHookプログラムの終了コードを区別する。前半と後半を同じファイルに続けて保存する。 -->
-
----
 
 # 7. 来週からチームで試すなら
 
