@@ -109,7 +109,7 @@ Instructionsは常時または対象ファイルに応じて適用し、Skills�
 
 ---
 
-# 5. Instructionsの実例：Microsoft VS Code
+# 4.1 Instructionsの実例：Microsoft VS Code
 
 **実例**：`microsoft/vscode/.github/instructions/buildNext.instructions.md`
 
@@ -135,7 +135,7 @@ applyTo: build/next/**
 
 ---
 
-# 6. Agent Skills：特定作業のルールと手順をまとめる
+# 5. Agent Skills：特定作業のルールと手順をまとめる
 
 **Agent Skillは、特定作業で必要になる指示・参考資料・ツールをまとめた作業パッケージです。** Copilotはタスクとの関連性から必要なSkillを読み込みます。
 
@@ -164,7 +164,7 @@ description: 区間判定ロジックの変更時に検証する手順
 
 ---
 
-# 7. Agent Skillsの実例：Shopify
+# 5.1 Agent Skillsの実例：Shopify
 
 **公開リポジトリ**：`Shopify/agent-skills` の `shopify-functions`
 
@@ -191,7 +191,7 @@ shopify-functions/
 
 ---
 
-# 8. 検証スクリプト：共通のコマンドで結果を確かめる
+# 6. 検証スクリプト：共通のコマンドで結果を確かめる
 
 **検証スクリプトは、テストや静的解析を実行し、成功・失敗を返すプログラムです。** 人とCopilotが同じコマンドを使えます。
 
@@ -219,7 +219,7 @@ sys.exit(result.returncode)
 
 ---
 
-# 9. 検証の実例：StripeとSpotify
+# 6.1 検証の実例：StripeとSpotify
 
 | 企業・仕組み | 実際に用意した仕組み | 狙い |
 |---|---|---|
@@ -237,7 +237,7 @@ Stripeでは、Minionsが作成したPRのうち**週1,300件超**が人のレ�
 
 ---
 
-# 10. 説明例：作業区間の重複判定を修正する
+# 7. 説明例：作業区間の重複判定を修正する
 
 **題材：作業区間の重複判定を修正する、小さなPythonプロジェクト**
 
@@ -261,7 +261,7 @@ if start_a <= end_b and start_b <= end_a:
 
 ---
 
-# 11. 説明例のファイル構成
+# 8. 説明例のファイル構成
 
 ```text
 my-project/
@@ -286,7 +286,7 @@ my-project/
 
 ---
 
-# 12. 説明例：3要素を組み合わせた修正の流れ
+# 9. 説明例：3要素を組み合わせた修正の流れ
 
 **Copilotへの依頼例**
 
@@ -307,7 +307,7 @@ my-project/
 
 ---
 
-# 13. 導入後に確認すべき点と落とし穴
+# 10. 導入後に確認すべき点と落とし穴
 
 | 起きること | まず確認すること |
 |---|---|
@@ -325,7 +325,7 @@ my-project/
 
 ---
 
-# 14. 来週からチームで試すなら
+# 11. 来週からチームで試すなら
 
 ### 小さく始める3ステップ
 
