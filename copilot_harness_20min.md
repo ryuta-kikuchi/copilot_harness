@@ -111,22 +111,23 @@ Instructionsは常時または対象ファイルに応じて適用し、Skills�
 
 # 4.1 VS Codeの実例：検証方法とその理由
 
-**対象**：`build/next/`にある、VS CodeのソースをJavaScriptに変換・結合するビルド処理。esbuildはその変換・結合を担うツールです。
+**場面**：VS Codeの開発者が、本体のソースを実行・配布できる形に変換する「ビルド用プログラム」を変更します。
 
-指示ファイルの`applyTo: 'build/next/**'`で、適用するファイルの範囲を指定します。
+**確認したいこと**：変更後のプログラムで、ソースをJavaScriptに変換できるか。
 
-- **背景**：ビルド処理自体はNode.jsで直接実行するTypeScript。通常の「VS Code - Build」タスクでは、そのスクリプトをコンパイルしません。
-- **指示**：そのタスクに頼らず、変更したビルド処理を直接実行します。
+**Instructionsの指示**：この確認にはVS Code全体のビルドは不要。変換処理を次のコマンドで直接動かします。
 
 ```bash
 node build/next/index.ts transpile --out out-test
 ```
 
-**ポイント**：「テストして」だけでなく、変更対象に合うコマンドと、その理由を残しています。
+`transpile`は変換処理の指定、`--out out-test`は結果の出力先です。
+
+**ポイント**：「この部分を変更したら、このコマンドで確認する」というプロジェクト固有の知識をCopilotに渡しています。
 
 <small>出典：[buildNext.instructions.md — Validating Changes](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md#important-validating-changes)。実ファイルにはbundleの検証コマンドも記載。</small>
 
-<!-- 発表メモ：約50秒。VS Code本体のコードと、VS Codeをビルドするためのコードは別。「いつもの全体ビルドを実行すれば確認できる」という思い込みを防ぐ指示。transpileはTypeScriptからJavaScriptへの変換、bundleは複数のコードの結合。これは公開ファイルの説明であり、この場でコマンドを実行する必要はない。 -->
+<!-- 発表メモ：約50秒。普段VS Codeで自分のアプリを開発する場面ではなく、VS Code自体を開発する場面。本体のコードと、本体を変換・結合するビルド用のコードがある。今回は後者を変更し、その変換処理を直接動かして確認する。node build/next/index.tsがプログラムの起動、transpileが処理の選択、--outが出力先。「全体ビルドでは確認できない」とは断定しない。原文は全体ビルドが不要だと説明している。applyTo: 'build/next/**'で対象ファイルを指定している。実演は行わない。 -->
 
 ---
 
