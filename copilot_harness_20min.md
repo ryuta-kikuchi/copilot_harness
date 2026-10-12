@@ -111,11 +111,25 @@ style: |
 
 ---
 
-# 4.1 VS Codeの実例：Instructionsに何を書くか
+# 4.1 VS Codeの実例：確認方法を指示する背景
 
-**作業背景**：VS Code自体の開発で、ソースをJavaScriptへ変換するビルドスクリプトを変更します。Makefileに相当する役割を、TypeScriptで実装したものです。
+**開発環境**：VS Code自体の開発には、複数のビルド処理をまとめて起動する「VS Code - Build」というタスクがあります。本体のソース変換・型チェックに加え、拡張機能などもビルドします。
 
-**確認したいこと**：変更したスクリプトで、変換処理が動くか。その確認方法をCopilotに伝えるため、次のInstructionsを置きます。
+**今回の作業**：本体の機能ではなく、ソースをJavaScriptへ変換するビルドスクリプトを変更します。Makefileに相当する役割を、TypeScriptで実装したものです。
+
+**必要な確認**：変更した変換処理を直接動かすこと。この確認には、拡張機能などを含むビルドタスクの実行は不要です。
+
+**Instructionsを書く理由**：「変更を確認して」だけでは、どの処理を動かすべきかをエージェントが判断する必要があります。そこで、不要なタスクと使うべきコマンドを明記します。
+
+<small>出典：[VS Code - Buildのタスク定義](https://github.com/microsoft/vscode/blob/main/.vscode/tasks.json)、[変更の検証に関するInstructions](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md#important-validating-changes)</small>
+
+<!-- 発表メモ：約35秒。初めにVS Code - Buildが何を指すか説明する。これはVS Code本体の変換と型チェック、拡張機能、Copilotのビルドをまとめて起動する開発用タスクで、配布物作成までの全工程という意味ではない。今回の変更対象はビルドスクリプト。原文では、これらのスクリプトはNode.jsで直接実行でき、本体のビルドでコンパイルされないと説明している。確認に必要な処理を具体的に伝え、エージェントが確認方法を推測する負担を減らすのが指示の意義。実際にエージェントが不要なタスクを実行したという経緯や所要時間は原文に記載がないため断定しない。 -->
+
+---
+
+# 4.2 VS Codeの実例：Instructionsに何を書くか
+
+**前のスライドの確認方法を、エージェントが読むMarkdownの指示書にします。** 対象ファイルと、実行してほしいコマンドを記載します。
 
 <small>`.github/instructions/buildNext.instructions.md`（原文の日本語要約・抜粋）</small>
 
@@ -132,15 +146,15 @@ node build/next/index.ts transpile --out out-test
 ````
 
 - **適用範囲**：`applyTo`で指定した`build/next/`内のファイル。
-- **指示の理由**：変換工程を単独で実行できるため、その確認には全体ビルドは不要です。
+- **指示本文**：まとめて起動するビルドタスクは不要と伝え、変換工程を直接実行するコマンドを示します。
 
 <small>出典：[buildNext.instructions.md — Validating Changes](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md#important-validating-changes)。実ファイルにはbundleの検証コマンドも記載。</small>
 
-<!-- 発表メモ：約50秒。本文の順に、作業背景、確認したいこと、具体的な指示、指示の理由を説明する。普段VS Codeで自分のアプリを開発する場面ではなく、VS Code自体を開発する場面。Makefileと同様の役割をTypeScriptで実装したビルドスクリプトを変更し、該当する処理を直接実行して確認する。ここでは原文の一部を日本語で要約し、descriptionやほかの説明は省略している。applyToが適用範囲、その下がCopilotに渡す指示本文。transpileが変換処理の選択、--outが出力先。ソースの一部だけを処理する意味ではなく、ビルド工程を選ぶという意味。全体ビルドで確認できないとは断定しない。原文にはエージェントが時間を浪費したという経緯の記載はない。実演は行わない。 -->
+<!-- 発表メモ：約30秒。背景を説明した後に指示ファイルの具体例を読む。原文の一部を日本語で要約し、descriptionやほかの説明は省略している。applyToが適用範囲、その下がCopilotに渡す指示本文。タスク名が前のスライドで説明したものだと結び付ける。次のスライドでコマンドの意味と確認範囲を説明する。実演は行わない。 -->
 
 ---
 
-# 4.2 VS Codeの実例：指定したコマンドは何をするか
+# 4.3 VS Codeの実例：指定したコマンドは何をするか
 
 **TypeScript**は型などの記述を加えたJavaScriptです。ここでは、それを実行用のJavaScriptへ変換する工程を確認します。
 
@@ -164,7 +178,7 @@ node build/next/index.ts transpile --out out-test
 
 ---
 
-# 4.3 VS Codeの実例：不具合の原因と回避策
+# 4.4 VS Codeの実例：不具合の原因と回避策
 
 **記録されている問題**：ブラウザ版の接続時に認証エラーが起きた。
 
