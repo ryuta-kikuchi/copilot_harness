@@ -44,7 +44,7 @@ style: |
 # 2. ハーネスとは、AIが作業するための周辺環境
 
 ```text
-                    GitHub Copilot（LLM + Agent）
+                    GitHub Copilotのエージェント
                               │
              ┌────────────────┼────────────────┐
              │                │                │
@@ -59,9 +59,11 @@ style: |
 
 **InstructionsとSkillsは、どちらもルールと手順を含められます。主な違いは、いつ読み込まれるかです。**
 
-Instructionsは常時または対象ファイルに応じて適用し、Skillsは作業の内容に応じて読み込みます。重要な制約を両方に記載する場合もあります。
+エージェントは、指示を参照しながらファイルの編集やコマンドの実行を進めます。Instructionsは常時または対象ファイルに応じて、Skillsは作業の内容に応じて読み込みます。
 
 **成功パターンをリポジトリに残し、実行結果で確かめることがハーネスの役割です。**
+
+<small>CI：コード変更時に、サーバー側でビルドやテストなどを自動実行する仕組み。</small>
 
 <!-- 発表メモ：約1分。InstructionsとSkillsは「ルール」と「手順」で完全に分かれるわけではない。違いは、主にいつ読み込まれるか。モデル内部にもツール実行を扱うハーネスがあるが、今日は利用者が構築できるリポジトリ内のハーネスに絞る。 -->
 
@@ -91,7 +93,7 @@ Instructionsは常時または対象ファイルに応じて適用し、Skills�
 
 ```markdown
 # Project Instructions
-- 区間は半開区間 [start, end) とする。
+- 区間は [start, end)（開始を含み、終了を含まない）とする。
 - 終了時刻 = 次の開始時刻なら、重複ではない。
 - start >= end は ValueError とする。
 - 公開関数の引数と戻り値を変更しない。
@@ -138,15 +140,41 @@ node build/next/index.ts transpile --out out-test
 
 ---
 
-# 4.2 VS Codeの実例：不具合の原因と回避策
+# 4.2 VS Codeの実例：指定したコマンドは何をするか
+
+**TypeScript**は型などの記述を加えたJavaScriptです。ここでは、それを実行用のJavaScriptへ変換する工程を確認します。
+
+```bash
+node build/next/index.ts transpile --out out-test
+```
+
+| 指定 | 意味 |
+|---|---|
+| `node build/next/index.ts` | Node.js（実行環境）でビルドスクリプトを起動する |
+| `transpile` | 実行する工程として、TypeScriptからJavaScriptへの変換を選ぶ |
+| `--out out-test` | 変換結果の出力先フォルダーを指定する |
+
+**この実装の動き**：`index.ts`が引数を読み、ソースフォルダー内の対象ファイルを列挙して、それぞれ変換します。
+
+**省くのは他のビルド工程です。1ファイルだけで確認を済ませる意味ではありません。** 結合処理やアプリの動作は、変更内容に応じて別途確認します。
+
+<small>出典：[コマンドの選択処理](https://github.com/microsoft/vscode/blob/main/build/next/index.ts)、[対象ファイルの列挙と変換](https://github.com/microsoft/vscode/blob/main/build/next/index.ts#L398-L416)</small>
+
+<!-- 発表メモ：約50秒。TypeScriptは型などの記述を加えたJavaScriptで、ここでは実行用のJavaScriptに変換する。index.tsは変換対象の入口ではなく、処理を起動して選ぶためのスクリプト。名前に特別な自動変換機能があるわけではない。実装がソースフォルダーを走査して対象ファイルを列挙する。依存ファイルを芋づる式にたどる説明はしない。make transpileのように必要な工程を選ぶ、と説明する。全タスクが必ず全工程を実行するわけではない。この変換コマンドだけで結合処理やアプリの動作まで確認したことにはならない。実演は行わない。 -->
+
+---
+
+# 4.3 VS Codeの実例：不具合の原因と回避策
 
 **記録されている問題**：ブラウザ版の接続時に認証エラーが起きた。
+
+**背景**：ビルド時には複数のソースを結合し、バージョンや認証に必要な設定をコードに差し込みます。esbuildは、その変換・結合を担うツールです。
 
 1. ソースには、製品設定を後から差し込むための**目印のコメント**がある。
 2. esbuildが結合時にそのコメントを消すと、結合後の置換では設定を差し込めない。
 3. 認証に必要な`serverLicense`が欠け、署名の検証に失敗して接続を拒否される。
 
-**Instructionsに残した回避策**：esbuildがソースを読み込む段階（`onLoad`）で、コメントが消える前に設定を差し込む。
+**Instructionsに残した回避策**：esbuildがソースを読み込む段階で、コメントが消える前に設定を差し込む。
 
 **確認方法も記載**：ブラウザ向けのビルドを実行し、生成されたJavaScriptに`serverLicense`が含まれるかを確認する。
 
@@ -178,7 +206,7 @@ description: 区間判定ロジックの変更時に検証する手順
 6. 変更点、テスト結果、未確認事項を報告する。
 ```
 
-- `description`に、**どんなタスクで使うか**を記載する
+- `name`はSkillの名前、`description`は**どんなタスクで使うか**の説明
 - 読み込みや手順の実行を確かめる。必要なら「verify-schedule Skillを使って」と明記する
 
 <small>仕様：[GitHub公式 Agent Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)</small>
@@ -189,24 +217,16 @@ description: 区間判定ロジックの変更時に検証する手順
 
 # 5.1 Agent Skillsの実例：Shopify
 
-**公開リポジトリ**：`Shopify/agent-skills` の `shopify-functions`
+**背景**：ShopifyはECサイトの基盤です。Shopify Functionsでは、割引などの処理を開発者が追加できます。その実装をAIに依頼するときのSkillが、`shopify-functions`です。
 
-AIに伝えている内容の例：
+**スキーマ**は、利用できるデータ項目と型を定義したもの。AIが存在しない項目を使うと、正しく実装できません。
 
 1. 実装前に**公式ドキュメントを検索**する
 2. スキーマに存在しないフィールドを**推測で追加しない**
-3. 公式CLIで雛形を作り、**テストを含めて実装**する
-4. 生成物を**スキーマ検証スクリプト**で確認する
+3. 公式コマンドで雛形を作り、**テストを含めて実装**する
+4. ビルドし、入力データの例を与えて**動作を確認**する
 
-```text
-shopify-functions/
-├── SKILL.md              ← 作業のルールと手順
-├── scripts/search_docs.js ← 何が正しいか調べる
-├── scripts/validate.js    ← コードを検証する
-└── assets/                ← APIスキーマなど
-```
-
-**まねしたい点**：`SKILL.md`だけで完結させず、検索・検証用のスクリプトも置く。
+**まねしたい点**：作業順序に加え、「何を根拠に実装するか」と「どう確認するか」をSkillに記載する。
 
 <small>出典：[ShopifyのSkills](https://github.com/Shopify/agent-skills)、[shopify-functions/SKILL.md](https://github.com/Shopify/agent-skills/blob/main/shopify-functions/SKILL.md)</small>
 
@@ -216,9 +236,9 @@ shopify-functions/
 
 # 6. 検証スクリプト：共通のコマンドで結果を確かめる
 
-**検証スクリプトは、テストや静的解析を実行し、成功・失敗を返すプログラムです。** 人とCopilotが同じコマンドを使えます。
+**検証スクリプトは、テストなどを実行し、成功・失敗を返すプログラムです。** 人とCopilotが同じコマンドを使えます。
 
-**例：`scripts/verify.py`で既存のユニットテストを実行する**
+**例：`scripts/verify.py`が、`tests/`内の既存テストをまとめて実行する**
 
 ```python
 import subprocess
@@ -233,8 +253,8 @@ sys.exit(result.returncode)
 ```
 
 - 人もCopilotも**同じ一つのコマンド**を使う：`python scripts/verify.py`
-- `exit code 0`は成功、0以外は失敗。AIの自己評価に依存しない
-- **次の段階**：このスクリプトをCIの必須チェックでも実行する
+- **終了コード**は、実行したプログラムが返す数値。この例ではテストの成功を0、失敗を0以外で返す
+- 成功は**実行したテストの範囲**での結果。必要なテストがなければ、不具合を見逃す
 
 <small>着想：[SpotifyのVerifier](https://engineering.atspotify.com/2025/12/feedback-loops-background-coding-agents-part-3)。上記は発表用に自作したプログラム。</small>
 
@@ -244,11 +264,13 @@ sys.exit(result.returncode)
 
 # 6.1 検証の実例：StripeとSpotify
 
+**背景**：人が付き添わずにコードを変更する社内エージェントでは、変更後の確認も仕組みとして用意しています。
+
 | 企業・仕組み | 実際に用意した仕組み | 狙い |
 |---|---|---|
-| **Stripe / Minions** | 実装 → LLM → Lint → 決定的処理 → CI → エラー修正 → LLM | 重要な処理をAIの判断だけに任せない |
-| **Spotify / Honk** | リポジトリに合うVerifierを自動選択。`pom.xml`があればMaven向けを実行 | テストコマンドをAIに推測させない |
-| **Spotify / Honk** | 元の依頼と差分を別LLMが比較 | 不要なリファクタリングやテスト無効化を検出 |
+| **Stripe / Minions** | AIによる実装・修正と、定められた手順による形式チェックやCIの実行を組み合わせる | 重要な処理をAIの判断だけに任せない |
+| **Spotify / Honk** | Verifier（検証処理）を自動選択。Mavenの設定ファイルがあれば、そのビルド・テスト用の検証を実行 | テストコマンドをAIに推測させない |
+| **Spotify / Honk** | 元の依頼とコードの変更内容を、別のAIが比較 | 不要なリファクタリングやテスト無効化を検出 |
 
 Stripeでは、Minionsが作成したPRのうち**週1,300件超**が人のレビュー後にマージされたと報告されています（2026年2月）。ただし、この件数は**特定の設定ファイル単体の効果**を示すものではありません。
 
@@ -256,7 +278,7 @@ Stripeでは、Minionsが作成したPRのうち**週1,300件超**が人のレ�
 
 <small>出典：[Stripe Minions Part 2](https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents-part-2)、[Spotify Honk Part 3](https://engineering.atspotify.com/2025/12/feedback-loops-background-coding-agents-part-3)</small>
 
-<!-- 発表メモ：約1分20秒。高度なBlueprintsやMCPをまねる必要はない。「テストの実行をAIにお願いする」から「同じ検証プログラムを用意する」、さらにCIの必須チェックにする、という順番で進められる。 -->
+<!-- 発表メモ：約1分20秒。Mavenは主にJavaで使うビルドツールで、pom.xmlはその設定ファイル。Spotifyではこれを手掛かりに検証を選ぶ。AIによる変更内容の比較も完全な保証ではない。自分のチームでは共通の検証プログラムを用意し、さらにCIの必須チェックにする、という順番で進められる。 -->
 
 ---
 
@@ -264,7 +286,7 @@ Stripeでは、Minionsが作成したPRのうち**週1,300件超**が人のレ�
 
 **題材：作業区間の重複判定を修正する、小さなPythonプロジェクト**
 
-仕様：
+**`[start, end)`は「開始を含み、終了を含まない」区間（半開区間）です。** 例えば`[9, 12)`は9時から12時まで、12時ちょうどは含みません。
 
 - `[9, 12)` と `[11, 14)` → **重複する**
 - `[9, 12)` と `[12, 15)` → **重複しない**（境界が接するだけ）
@@ -326,7 +348,7 @@ my-project/
 
 <small>実際の運用では、Skillの参照と検証コマンドの実行をログで確かめます。</small>
 
-<!-- 発表メモ：約2分20秒。実演は行わない。依頼文から仕様確認、Skillの参照、修正、検証、報告へ進む流れを表で説明する。Skill内にも仕様確認やテスト保護のルールが含まれることを指摘する。読み込みや実行が必ず行われるわけではないため、実際の運用ではログを確認する。 -->
+<!-- 発表メモ：約1分30秒。実演は行わない。依頼文から仕様確認、Skillの参照、修正、検証、報告へ進む流れを表で説明する。Skill内にも仕様確認やテスト保護のルールが含まれることを指摘する。読み込みや実行が必ず行われるわけではないため、実際の運用ではログを確認する。 -->
 
 ---
 
@@ -340,7 +362,7 @@ my-project/
 | 毎回同じ誤実装をする | 誤りをInstructions、Skill、テストのどこに残すべきか |
 | 設定ファイルが巨大になる | 共通ルール、対象固有ルール、作業手順に分ける |
 
-**特に重要**：InstructionsとSkillはAIへの指示です。**強制したい品質ゲートはCIへ**置きます。
+**実行を必須にしたいテストはCIへ**置き、失敗した変更は取り込めない設定にします。InstructionsやSkillに記載するだけでは、実行は保証されません。
 
 <small>参考：[対応環境の公式一覧](https://docs.github.com/en/copilot/reference/custom-instructions-support)、[VS CodeのSkill利用](https://code.visualstudio.com/docs/agent-customization/agent-skills)</small>
 
