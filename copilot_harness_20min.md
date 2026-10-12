@@ -106,7 +106,7 @@ style: |
 
 ---
 
-# 4.1 VS Codeの実例：全体に適用する共通Instructions
+# 4.1 共通Instructionsの実例：VS Code
 
 **背景**：VS Codeでは、複数の機能を開発しても設計や書き方をそろえる必要があります。共通の前提を、`.github/copilot-instructions.md`に記載しています。
 
@@ -129,7 +129,7 @@ style: |
 
 ---
 
-# 4.2 VS Codeの実例：確認方法を指示する背景
+# 4.2 対象別Instructionsの実例：ビルド処理の確認
 
 **開発環境**：VS Code自体の開発には、複数のビルド処理をまとめて起動する「VS Code - Build」というタスクがあります。本体のソース変換・型チェックに加え、拡張機能などもビルドします。
 
@@ -145,7 +145,7 @@ style: |
 
 ---
 
-# 4.3 VS Codeの実例：対象別Instructionsに何を書くか
+# 4.2.1 対象別Instructionsのファイル内容
 
 **前のスライドの確認方法を、エージェントが読むMarkdownの指示書にします。** 対象ファイルと、実行してほしいコマンドを記載します。
 
@@ -172,7 +172,7 @@ node build/next/index.ts transpile --out out-test
 
 ---
 
-# 4.4 VS Codeの実例：指定したコマンドは何をするか
+# 4.2.2 指定した確認コマンドの動き
 
 **TypeScript**は型などの記述を加えたJavaScriptです。ここでは、それを実行用のJavaScriptへ変換する工程を確認します。
 
