@@ -109,29 +109,44 @@ Instructionsは常時または対象ファイルに応じて適用し、Skills�
 
 ---
 
-# 4.1 Instructionsの実例：Microsoft VS Code
+# 4.1 VS Codeの実例：検証方法とその理由
 
-**実例**：`microsoft/vscode/.github/instructions/buildNext.instructions.md`
+**対象**：`build/next/`にある、VS CodeのソースをJavaScriptに変換・結合するビルド処理。esbuildはその変換・結合を担うツールです。
 
-```yaml
----
-description: 新しいesbuildベースのビルドシステムに関する作業メモ
-applyTo: build/next/**
----
+指示ファイルの`applyTo: 'build/next/**'`で、適用するファイルの範囲を指定します。
+
+- **背景**：ビルド処理自体はNode.jsで直接実行するTypeScript。通常の「VS Code - Build」タスクでは、そのスクリプトをコンパイルしません。
+- **指示**：そのタスクに頼らず、変更したビルド処理を直接実行します。
+
+```bash
+node build/next/index.ts transpile --out out-test
 ```
 
-`build/next/**`を変更するときだけ、次の知識を与えます。
+**ポイント**：「テストして」だけでなく、変更対象に合うコマンドと、その理由を残しています。
 
-- **実行しなくてよい**全体ビルドタスクを明記する
-- 代わりに `node build/next/index.ts transpile --out out-test` を実行する
-- 既存ツールを削除してはいけない理由を説明する
-- 過去の不具合（esbuildがコメントを除去する問題）と回避策を記録する
+<small>出典：[buildNext.instructions.md — Validating Changes](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md#important-validating-changes)。実ファイルにはbundleの検証コマンドも記載。</small>
 
-**まねしたい点**：一般論ではなく、「このコードで過去に何に困ったか」を書く。
+<!-- 発表メモ：約50秒。VS Code本体のコードと、VS Codeをビルドするためのコードは別。「いつもの全体ビルドを実行すれば確認できる」という思い込みを防ぐ指示。transpileはTypeScriptからJavaScriptへの変換、bundleは複数のコードの結合。これは公開ファイルの説明であり、この場でコマンドを実行する必要はない。 -->
 
-<small>出典：[実際のInstructions](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md) ※上記descriptionは説明用の要約</small>
+---
 
-<!-- 発表メモ：約1分20秒。実ファイルの前半に正しいテストコマンドがある。後半にはesbuildのonLoadで設定値を差し込む処理が残されている。一般的な「きれいなコードを書いて」より、現場固有の失敗防止に効く。 -->
+# 4.2 VS Codeの実例：不具合の原因と回避策
+
+**記録されている問題**：ブラウザ版の接続時に認証エラーが起きた。
+
+1. ソースには、製品設定を後から差し込むための**目印のコメント**がある。
+2. esbuildが結合時にそのコメントを消すと、結合後の置換では設定を差し込めない。
+3. 認証に必要な`serverLicense`が欠け、署名の検証に失敗して接続を拒否される。
+
+**Instructionsに残した回避策**：esbuildがソースを読み込む段階（`onLoad`）で、コメントが消える前に設定を差し込む。
+
+**確認方法も記載**：ブラウザ向けのビルドを実行し、生成されたJavaScriptに`serverLicense`が含まれるかを確認する。
+
+**自分のチームでまねするなら**：修正方針に「理由」と「確認方法」を添えると、後の変更で同じ不具合を作るリスクを減らせます。
+
+<small>出典：[buildNext.instructions.md — Key Learnings](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md#key-learnings)。原文の不具合説明と回避策を要約。</small>
+
+<!-- 発表メモ：約50秒。単に「この処理を消すな」と書くよりも、なぜその順序なのかを説明する。結合後に置換する案は、目印が消えた後なので成立しない。これはInstructionsにも手順が含まれる実例。ほかにも古いツールを残す理由が記載されているが、ここでは設定の差し込みに絞る。自分のチームでの活用は登壇者の提案であり、このファイル単体の効果を測定した主張ではない。 -->
 
 ---
 
