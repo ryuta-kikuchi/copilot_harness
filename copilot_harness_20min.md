@@ -111,32 +111,30 @@ Instructionsは常時または対象ファイルに応じて適用し、Skills�
 
 # 4.1 VS Codeの実例：Instructionsに何を書くか
 
-**`.github/instructions/buildNext.instructions.md`（原文の日本語要約・抜粋）**
+**作業背景**：VS Code自体の開発で、ソースをJavaScriptへ変換するビルドスクリプトを変更します。Makefileに相当する役割を、TypeScriptで実装したものです。
+
+**確認したいこと**：変更したスクリプトで、変換処理が動くか。その確認方法をCopilotに伝えるため、次のInstructionsを置きます。
+
+<small>`.github/instructions/buildNext.instructions.md`（原文の日本語要約・抜粋）</small>
 
 ````markdown
 ---
 applyTo: 'build/next/**'
 ---
-
-# ビルドスクリプトを変更するときの注意
-
 変更の確認に「VS Code - Build」タスクは不要です。
 ビルドスクリプトはNode.jsで直接実行できます。
 変換処理を確認するときは、次のコマンドを使ってください。
-
 ```bash
 node build/next/index.ts transpile --out out-test
 ```
 ````
 
-- **適用範囲**：`applyTo`で、`build/next/`内のファイルを扱うときの指示だと指定します。
-- **本文**：注意点と確認コマンドを文章で記載。対象はMakefileに相当する役割をTypeScriptで実装したスクリプトです。
-
-**指示の理由**：変換処理を個別に動かせるため、この確認に全体ビルドは不要です。
+- **適用範囲**：`applyTo`で指定した`build/next/`内のファイル。
+- **指示の理由**：変換工程を単独で実行できるため、その確認には全体ビルドは不要です。
 
 <small>出典：[buildNext.instructions.md — Validating Changes](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md#important-validating-changes)。実ファイルにはbundleの検証コマンドも記載。</small>
 
-<!-- 発表メモ：約50秒。まず実際に置くMarkdownファイルの形を見る。ここでは原文の一部を日本語で要約し、descriptionやほかの説明は省略している。applyToが適用範囲、その下がCopilotに渡す指示本文。普段VS Codeで自分のアプリを開発する場面ではなく、VS Code自体を開発する場面。Makefileと同様の役割をTypeScriptで実装したビルドスクリプトを変更し、該当する処理を直接実行して確認する。transpileが変換処理の選択、--outが出力先。ソースの一部だけを処理する意味ではなく、ビルド工程を選ぶという意味。全体ビルドで確認できないとは断定しない。原文にはエージェントが時間を浪費したという経緯の記載はない。実演は行わない。 -->
+<!-- 発表メモ：約50秒。本文の順に、作業背景、確認したいこと、具体的な指示、指示の理由を説明する。普段VS Codeで自分のアプリを開発する場面ではなく、VS Code自体を開発する場面。Makefileと同様の役割をTypeScriptで実装したビルドスクリプトを変更し、該当する処理を直接実行して確認する。ここでは原文の一部を日本語で要約し、descriptionやほかの説明は省略している。applyToが適用範囲、その下がCopilotに渡す指示本文。transpileが変換処理の選択、--outが出力先。ソースの一部だけを処理する意味ではなく、ビルド工程を選ぶという意味。全体ビルドで確認できないとは断定しない。原文にはエージェントが時間を浪費したという経緯の記載はない。実演は行わない。 -->
 
 ---
 
