@@ -216,24 +216,26 @@ node build/next/index.ts transpile --out out-test
 
 ---
 
-# 5.1 Agent Skillsの実例：Shopify
+# 5.1 作業別Skillの実例：Shopify Functionsの実装
 
-**作業背景**：ShopifyはECサイトの基盤です。Shopify Functionsでは、割引などの処理を開発者が追加できます。例えば「購入条件に応じた割引を実装して」とAIに依頼する場面です。
+**使う作業**：`shopify-functions`は、**Shopify Functionsを実装するときに使うSkill**です。ShopifyはECサイトの基盤で、Shopify Functionsは割引や配送方法などの処理をカスタマイズする仕組みです。
+
+**依頼例**：「購入条件に応じた割引を、Shopify Functionsで実装して」
 
 **必要な前提**：使えるデータ項目と型は、Shopifyの「スキーマ」で決まっています。項目を推測して実装すると、存在しないデータを使う誤りにつながります。
 
-そこで、`shopify-functions/SKILL.md`に次のルールと手順を記載しています（原文の日本語要約）。
+この作業向けに、`shopify-functions/SKILL.md`で次のルールと手順を渡します（原文の日本語要約）。
 
 1. 実装前に**公式ドキュメントを検索**する
 2. スキーマに存在しないフィールドを**推測で追加しない**
 3. 公式コマンドで雛形を作り、**テストを含めて実装**する
 4. ビルドし、入力データの例を与えて**動作を確認**する
 
-**まねしたい点**：作業順序に加え、「何を根拠に実装するか」と「どう確認するか」をSkillに記載する。
+**適用範囲**：Shopify Functionsの実装作業です。すべての開発作業に適用する共通Instructionsとは、読み込む場面が異なります。
 
 <small>出典：[ShopifyのSkills](https://github.com/Shopify/agent-skills)、[shopify-functions/SKILL.md](https://github.com/Shopify/agent-skills/blob/main/shopify-functions/SKILL.md)</small>
 
-<!-- 発表メモ：約1分20秒。割引の実装依頼は説明用の場面で、特定の企業内タスクを再現したものではない。スキーマは使えるデータ項目と型の定義。「割引を作って」と頼むだけではShopify固有の制約を十分に渡せないため、公式資料を調べてから実装し、確認まで行う手順をSkillに残す。公開Skillは主にClaude Codeなど向けで、Copilot専用の実例ではない。 -->
+<!-- 発表メモ：約1分20秒。最初に使う作業と依頼例を示す。shopify-functionsはShopify全体の開発に常時適用する指示ではなく、Shopify Functionsの実装作業に使うSkill。一般的に見える調査やテストの指示も、この作業で必要な制約や公式コマンドと一緒に読み込む。割引の依頼例は説明用で、特定の企業内タスクを再現したものではない。スキーマは使えるデータ項目と型の定義。公開Skillは主にClaude Codeなど向けで、Copilot専用の実例ではない。 -->
 
 ---
 
