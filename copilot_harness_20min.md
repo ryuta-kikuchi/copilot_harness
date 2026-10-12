@@ -77,7 +77,7 @@ style: |
 | **Agent Skills** | 特定作業のルールと手順を、必要なときに読み込む | `.github/skills/名前/SKILL.md`<br>必要に応じて参考資料・スクリプトも同梱 |
 | **検証** | ビルド・テストを実行し、変更の結果を確認する | 既存の確認コマンド、CI、検証用ツール |
 
-**InstructionsはVS Code、SkillsはShopify、検証はStripe／Spotifyの実例で説明します。**
+**InstructionsとSkillsはVS Code、検証はStripe／Spotifyの実例で説明します。**
 
 <small>実行環境によって対応機能は異なります。出典：[GitHub公式 カスタマイズ一覧](https://docs.github.com/en/copilot/reference/customization-cheat-sheet)、[Agent Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)</small>
 
@@ -208,61 +208,63 @@ node build/next/index.ts transpile --out out-test
 | 冒頭の`description` | どんな作業で使うか |
 | 本文 | 守るルール、作業手順、参照先、使うコマンド |
 
-次のShopifyの実例では、機能の実装に必要な制約と、調査から動作確認までの手順を一つのSkillにまとめています。
+次のVS Codeの実例では、画面の配色を実装・修正するときに必要なルールと具体的な実装方法を、一つのSkillにまとめています。
 
 <small>仕様：[GitHub公式 Agent Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)。読み込みや手順の実行は、実際のログで確認します。</small>
 
-<!-- 発表メモ：約1分20秒。Skillの入口と本文の構成を説明した後、Shopifyの背景、具体的なファイルの順に進む。作業固有の制約、参考資料やスクリプトをまとめられ、Instructionsと一部重複してもよい。必要なら使うSkillを依頼文に明記する。 -->
+<!-- 発表メモ：約1分20秒。Skillの入口と本文の構成を説明した後、VS Codeの配色作業の背景、具体的なファイルの順に進む。作業固有の制約や実装方法をまとめられ、Instructionsと一部重複してもよい。必要なら使うSkillを依頼文に明記する。 -->
 
 ---
 
-# 5.1 作業別Skillの実例：Shopify Functionsの実装
+# 5.1 VS CodeのSkill実例：配色とテーマ対応
 
-**使う作業**：`shopify-functions`は、**Shopify Functionsを実装するときに使うSkill**です。ShopifyはECサイトの基盤で、Shopify Functionsは割引や配送方法などの処理をカスタマイズする仕組みです。
+**作業背景**：VS Codeの画面には、明るいテーマ・暗いテーマ・見やすさを高めた高コントラストテーマがあります。色を固定すると、テーマを変えたときに文字や枠が見えにくくなる場合があります。
 
-**依頼例**：「購入条件に応じた割引を、Shopify Functionsで実装して」
+**使う作業**：`ux-theming`は、**画面部品の配色やテーマ対応を実装・修正するときに使うSkill**です。
 
-**必要な前提**：使えるデータ項目と型は、Shopifyの「スキーマ」で決まっています。項目を推測して実装すると、存在しないデータを使う誤りにつながります。
+**依頼例**：「この画面部品の背景色を、テーマを切り替えても適切に表示されるように修正して」
 
-この作業向けに、`shopify-functions/SKILL.md`で次のルールと手順を渡します（原文の日本語要約）。
+**Skillが伝える方針**：固定の色ではなく、テーマに応じて変わる名前付きの色を使います。
 
-1. 実装前に**公式ドキュメントを検索**する
-2. スキーマに存在しないフィールドを**推測で追加しない**
-3. 公式コマンドで雛形を作り、**テストを含めて実装**する
-4. ビルドし、入力データの例を与えて**動作を確認**する
+```css
+/* 固定色を直接指定する例 */
+background-color: #252526;
+/* テーマに応じた色を使う例 */
+background-color: var(--vscode-editor-background);
+```
 
-**適用範囲**：Shopify Functionsの実装作業です。すべての開発作業に適用する共通Instructionsとは、読み込む場面が異なります。
+**適用範囲**：配色やテーマ対応の作業です。共通Instructionsに加えて、この作業に必要な実装知識を読み込みます。
 
-<small>出典：[ShopifyのSkills](https://github.com/Shopify/agent-skills)、[shopify-functions/SKILL.md](https://github.com/Shopify/agent-skills/blob/main/shopify-functions/SKILL.md)</small>
+<small>出典：[ux-theming/SKILL.md](https://github.com/microsoft/vscode/blob/main/.github/skills/ux-theming/SKILL.md)。CSSは画面の見た目を指定する言語。var(...)でテーマが提供する色を参照します。</small>
 
-<!-- 発表メモ：約1分20秒。最初に使う作業と依頼例を示す。shopify-functionsはShopify全体の開発に常時適用する指示ではなく、Shopify Functionsの実装作業に使うSkill。一般的に見える調査やテストの指示も、この作業で必要な制約や公式コマンドと一緒に読み込む。割引の依頼例は説明用で、特定の企業内タスクを再現したものではない。スキーマは使えるデータ項目と型の定義。公開Skillは主にClaude Codeなど向けで、Copilot専用の実例ではない。 -->
+<!-- 発表メモ：約1分20秒。まずテーマを切り替えても適切に表示したいという背景を説明する。依頼文とCSSの対比は公開Skillの方針を説明する例で、特定の修正履歴の再現ではない。#252526は固定の色指定。--vscode-editor-backgroundはテーマが提供するエディター背景色の名前で、varで参照する。この名前はエディターの背景に使う例であり、全ての画面部品に同じ色を使う意味ではない。実際は部品の役割に合うテーマの色を選ぶ。次に具体的なSkillの内容を示す。 -->
 
 ---
 
-# 5.2 Shopifyの実例：SKILL.mdに何を書くか
+# 5.2 VS Codeの実例：SKILL.mdに何を書くか
 
-**`Shopify/agent-skills/shopify-functions/SKILL.md`の日本語要約・抜粋**
+**`.github/skills/ux-theming/SKILL.md`の日本語要約・抜粋**
 
 ```markdown
 ---
-name: shopify-functions
-description: Shopifyの割引や購入時の処理をカスタマイズする機能の実装
+name: ux-theming
+description: VS Codeの配色・テーマ対応・フォーカス表示を実装するときに使う
 ---
 
-- 公式ドキュメントの関連例を、実装前に検索する。
-- 利用するデータ項目はスキーマで確認し、存在しない項目を作らない。
-- 新しい機能の雛形は、公式CLIで生成する。
-- 実装にはテストを含め、ビルドと入力例による動作確認を行う。
-- ユーザーに代わってデプロイしない。
+- 画面部品には、テーマが提供する色や既存の標準スタイルを使う。
+- 新しい色を登録するときは、明暗と高コントラストの4種類に対応する。
+- キーボード操作の対象を示す枠にも、テーマの色を使う。
+- 高コントラストでは、透明な背景を避け、境界を分かるようにする。
+- 色の登録場所や標準スタイルの実装例を参照する。
 ```
 
-**含まれているもの**：調査・実装・検証の手順と、データ項目や公開操作に関する制約。
+**含まれているもの**：色の登録・適用方法、キーボード操作時の表示、高コントラストへの対応、参照すべき実装ファイル。
 
-**読み取れる点**：Skillにも「守ること」を記載します。作業の進め方と一緒に残せます。
+**読み取れる点**：Skillは作業手順だけでなく、その作業で守るルールや実装知識もまとめられます。
 
-<small>出典：[実際のSKILL.md](https://github.com/Shopify/agent-skills/blob/main/shopify-functions/SKILL.md)。descriptionと本文は要約。CLIはコマンドで操作するツール、デプロイは実装を利用環境へ反映する操作。公開SkillはCopilot専用ではありません。</small>
+<small>出典：[実際のSKILL.md](https://github.com/microsoft/vscode/blob/main/.github/skills/ux-theming/SKILL.md)。descriptionと本文は要約。フォーカス表示は、キーボード操作の対象を示す表示です。</small>
 
-<!-- 発表メモ：約40秒。これは公開Skillの内容を日本語で短く要約した抜粋で、実ファイルの全文ではない。最初に調査し、仕様に存在する項目を使い、公式コマンドで雛形を作り、確認まで進める。最後のデプロイ禁止は、手順だけでなく作業の制約もSkillに含める具体例。 -->
+<!-- 発表メモ：約40秒。これは公開Skillの内容を日本語で短く要約した抜粋で、実ファイルの全文ではない。4種類はlight、dark、hcDark、hcLight。実ファイルには色の登録コード、CSSでの参照例、部品の標準スタイル、フォーカス表示の実装例、参照ファイル一覧がある。テストを必ず実行するためのSkillというより、配色作業で必要なルールと実装方法をまとめたSkill。InstructionsとSkillsの内容が重なり得ることも説明する。 -->
 
 ---
 
@@ -328,14 +330,14 @@ description: Shopifyの割引や購入時の処理をカスタマイズする機
 
 | 実例 | 取り入れたい考え方 | 自分のチームで確認すること |
 |---|---|---|
-| VS Code | 共通の規約は全体向け、対象固有の確認方法は対象別Instructionsに残す | 全体で守ることと、特定の作業で必要なことは何か |
-| Shopify | 作業固有の制約と手順をSkillにまとめる | 調査・実装・検証のどこで間違えやすいか |
+| VS CodeのInstructions | 共通の規約は全体向け、対象固有の確認方法は対象別に残す | 全体で守ることと、特定の作業で必要なことは何か |
+| VS CodeのSkill | 配色作業に必要なルール・実装方法・参照先をまとめる | 作業ごとに必要な知識は何か |
 | Stripe | 重要な確認を、実行の仕組みに組み込む | AIの判断に任せず実行したいチェックは何か |
 | Spotify | 確認方法を、共通の入口にまとめる | AIや人が確認コマンドを迷わず使えるか |
 
 **各社の例は、それぞれの環境に合わせた仕組みです。** 自分のプロジェクトの確認方法や制約を基に、必要な部分から取り入れます。
 
-<!-- 発表メモ：約1分。4社の仕組みをそのまま一つに組み合わせる説明ではない。残すべき知識、繰り返す手順、確実に実行したい確認を自分のチームで選ぶための整理。 -->
+<!-- 発表メモ：約1分。Microsoft、Stripe、Spotifyの3社の仕組みをそのまま一つに組み合わせる説明ではない。残すべき知識、作業固有の実装方法、確実に実行したい確認を自分のチームで選ぶための整理。 -->
 
 ---
 
@@ -361,7 +363,7 @@ description: Shopifyの割引や購入時の処理をカスタマイズする機
 
 ### 小さく始める3ステップ
 
-1. **よくある失敗を3つ集める**：間違った確認コマンド、存在しないデータ項目の利用、テスト実行漏れなど
+1. **よくある失敗を3つ集める**：間違った確認コマンド、テーマ変更で見えない配色、テスト実行漏れなど
 2. **一つだけファイル化する**：まずInstructions。繰り返す作業ならSkillも作る
 3. **検証結果を残す**：実際にテストを実行したか、人の修正がどこで必要だったか
 
@@ -373,7 +375,8 @@ description: Shopifyの割引や購入時の処理をカスタマイズする機
 **企業事例と対応機能の詳細は、下記の出典を参照してください。**
 
 - [Microsoft VS CodeのInstructions](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md)
-- [ShopifyのAgent Skills](https://github.com/Shopify/agent-skills)
+- [Microsoft VS Codeの共通Instructions](https://github.com/microsoft/vscode/blob/main/.github/copilot-instructions.md)
+- [Microsoft VS Codeの配色Skill](https://github.com/microsoft/vscode/blob/main/.github/skills/ux-theming/SKILL.md)
 - [StripeのBlueprints](https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents-part-2)
 - [SpotifyのVerifier](https://engineering.atspotify.com/2025/12/feedback-loops-background-coding-agents-part-3)
 
