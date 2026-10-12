@@ -77,7 +77,7 @@ style: |
 | **Agent Skills** | 特定作業のルールと手順を、必要なときに読み込む | `.github/skills/名前/SKILL.md`<br>必要に応じて参考資料・スクリプトも同梱 |
 | **検証スクリプト** | テストなどを実行し、人とAIが同じ基準で結果を確認する | 例：`scripts/verify.py`<br>プロジェクト独自に用意するプログラム |
 
-**この順に各要素の意味と具体例を説明し、最後にPythonの修正例で組み合わせを見ます。**
+**この順に各要素の意味と具体例を説明し、最後にCSV社員名簿の取り込み例で組み合わせを見ます。**
 
 <small>実行環境によって対応機能は異なります。出典：[GitHub公式 カスタマイズ一覧](https://docs.github.com/en/copilot/reference/customization-cheat-sheet)、[Agent Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)</small>
 
@@ -89,15 +89,15 @@ style: |
 
 **Instructionsは、Copilotが作業時に参照するプロジェクトの指示書です。** 共通版はリポジトリ全体、対象別版は指定したファイルに適用します。
 
-**例：開始・終了時刻から、2つの作業時間が重なるかを判定するPythonプロジェクト**（後半で詳しく説明）
+**例：社員番号と氏名が入ったCSV社員名簿を読み込むPythonツール**（後半で詳しく説明）
 
 共通の指示を、`.github/copilot-instructions.md`に記載します。
 
 ```markdown
 # Project Instructions
-- 区間は [start, end)（開始を含み、終了を含まない）とする。
-- 終了時刻 = 次の開始時刻なら、重複ではない。
-- start >= end は ValueError（不正な入力の例外）とする。
+- 社員番号は文字列で扱い、先頭のゼロを残す。
+- 社員番号・氏名の空欄と、社員番号の重複はエラーにする。
+- 入力のエラーは、CSVの行番号付きの ValueError とする。
 - 公開関数の引数と戻り値を変更しない。
 - 既存テストを削除・無効化しない。
 - 変更後は python scripts/verify.py を実行する。
@@ -109,7 +109,7 @@ style: |
 
 <small>仕様：[GitHub公式 リポジトリInstructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)</small>
 
-<!-- 発表メモ：約1分20秒。現場で本当に効くのは「どこが非自明か」。規約が多い場合は、長大な一枚のファイルではなく、docsへの参照や対象別Instructionsを利用する。これは自作例であり、企業の実ファイルではない。 -->
+<!-- 発表メモ：約1分20秒。社員番号00123は数量ではなく識別子なので、数値に変換して123にすると別の表記になる。ValueErrorは不正な入力を知らせるPythonの例外。行番号はヘッダーを1行目として数える。この業務上の約束をAIに渡すのがInstructions。規約が多い場合はdocsへの参照や対象別Instructionsを利用する。これは説明用の自作例であり、企業の実ファイルではない。 -->
 
 ---
 
@@ -184,18 +184,18 @@ node build/next/index.ts transpile --out out-test
 
 **Agent Skillは、特定作業で必要になる指示・参考資料・ツールをまとめた作業パッケージです。** Copilotはタスクとの関連性から必要なSkillを読み込みます。
 
-**例：`.github/skills/verify-schedule/SKILL.md`**
+**例：`.github/skills/verify-employee-csv/SKILL.md`**
 
-先ほどの重複判定を修正する作業用です。`src/schedule.py`は判定コード、`tests/`はその動作を確認するテストの保存先です。
+先ほどのCSV取り込みを修正する作業用です。`src/employee_csv.py`は取り込みコード、`tests/`はその動作を確認するテストの保存先です。
 
 ```markdown
 ---
-name: verify-schedule
-description: 区間判定ロジックの変更時に検証する手順
+name: verify-employee-csv
+description: CSV社員名簿の取り込み処理を変更するときの検証手順
 ---
 
-1. src/schedule.py と tests/ を読む。
-2. 半開区間と不正区間の仕様を確認する。
+1. src/employee_csv.py と tests/ を読む。
+2. 社員番号の先頭ゼロ・空欄・重複の仕様を確認する。
 3. 既存テストを変更せず、実装を修正する。
 4. python scripts/verify.py を実行する。
 5. 失敗したら原因を修正し、再実行する。
@@ -203,7 +203,7 @@ description: 区間判定ロジックの変更時に検証する手順
 ```
 
 - `name`はSkillの名前、`description`は**どんなタスクで使うか**の説明
-- 読み込みや手順の実行を確かめる。必要なら「verify-schedule Skillを使って」と明記する
+- 読み込みや手順の実行を確かめる。必要なら「verify-employee-csv Skillを使って」と明記する
 
 <small>仕様：[GitHub公式 Agent Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)</small>
 
@@ -234,7 +234,7 @@ description: 区間判定ロジックの変更時に検証する手順
 
 # 6. 検証スクリプト：共通のコマンドで結果を確かめる
 
-**背景**：重複判定を直したら、既存テストで仕様どおりか確認します。人とAIが同じ確認を行えるよう、テストを起動する検証スクリプトを用意します。
+**背景**：CSV取り込みを直したら、正常な名簿・先頭ゼロ・空欄・社員番号の重複を既存テストで確認します。人とAIが同じ確認を行えるよう、テストを起動する検証スクリプトを用意します。
 
 **共通の確認コマンド**：`python scripts/verify.py`
 
@@ -300,27 +300,30 @@ sys.exit(result.returncode)
 
 ---
 
-# 7. 説明例：作業区間の重複判定を修正する
+# 7. 説明例：CSV社員名簿の取り込みを修正する
 
-**作業背景**：同じ担当者の作業時間が重複していないかを判定します。9～12時と12～15時は続けて担当できるため、重複としない仕様です。
+**作業背景**：CSV社員名簿を別の処理で使うために読み込みます。`employee_id`は社員番号、`name`は氏名の列です。
 
-**`[start, end)`は「開始を含み、終了を含まない」区間（半開区間）です。** 例えば`[9, 12)`は9時から12時まで、12時ちょうどは含みません。
-
-- `[9, 12)` と `[11, 14)` → **重複する**
-- `[9, 12)` と `[12, 15)` → **重複しない**（境界が接するだけ）
-- `[12, 12)` → **不正な区間として例外**
-
-**誤った実装例**：`start_a`・`end_a`は作業Aの開始・終了、`start_b`・`end_b`は作業Bの開始・終了です。
-
-```python
-# 誤り：終了時刻 == 開始時刻も重複扱いになる
-if start_a <= end_b and start_b <= end_a:
-    return True
+```csv
+employee_id,name
+00123,田中
+00456,佐藤
 ```
 
-**狙い**：難しいアルゴリズムではなく、**仕様を教える・作業手順を教える・結果を確かめる**という仕組みを見る。
+- 社員番号は文字列で保持し、**`00123`の先頭ゼロを残す**
+- 社員番号・氏名が空欄なら、**行番号付きのエラー**にする
+- 同じ社員番号が複数行にあれば、**重複としてエラー**にする
 
-<!-- 発表メモ：約1分20秒。ここからは実演せず、半開区間のコード例で3要素の組み合わせを説明する。境界が接するケースと不正な区間への対応を修正対象として示す。 -->
+**誤った実装例**：`row`はCSVの1行分のデータです。
+
+```python
+# 誤り：数値に変換すると "00123" が 123 になる
+employee_id = int(row["employee_id"])
+```
+
+**狙い**：業務仕様をInstructionsに残し、Skillで修正と検証を進める流れを見る。
+
+<!-- 発表メモ：約1分20秒。CSVはカンマで区切った表形式のテキスト。ヘッダーが列名、以降が各社員のデータ。intは文字列を数値に変換する関数で、00123の先頭ゼロを落としてしまう。社員番号は識別子として文字列で残すという業務仕様が重要。空欄や社員番号の重複も受け付けず、修正する行が分かるエラーを返す。行番号はヘッダーを1行目として数える。この例では必要な列があるCSVを前提とし、文字コードや列不足への対応は扱わない。実演は行わない。 -->
 
 ---
 
@@ -331,14 +334,14 @@ my-project/
 ├── .github/
 │   ├── copilot-instructions.md        ① 共通ルール
 │   ├── instructions/
-│   │   └── schedule.instructions.md   ①' 対象固有のルール
+│   │   └── employee-csv.instructions.md ①' 対象固有のルール
 │   └── skills/
-│       └── verify-schedule/
+│       └── verify-employee-csv/
 │           └── SKILL.md               ② 特定作業のルールと手順
 ├── scripts/
 │   └── verify.py                      ③ 機械的な検証
-├── src/schedule.py                    重複を判定するコード
-└── tests/test_schedule.py             判定結果を確認するテスト
+├── src/employee_csv.py                CSVを読み込むコード
+└── tests/test_employee_csv.py         取り込み結果を確認するテスト
 ```
 
 - この例では、#3で示した**3要素**をファイルとして用意する
@@ -353,16 +356,16 @@ my-project/
 
 **Copilotへの依頼例**
 
-> `src/schedule.py`の重複判定関数`has_conflict`を修正してください。既存テストは変更せず、`verify-schedule` Skillを使って検証し、結果を報告してください。
+> `src/employee_csv.py`の取り込み関数`load_employees`を修正してください。社員番号の先頭ゼロを保持し、空欄と社員番号の重複は行番号付きのエラーにしてください。既存テストは変更せず、`verify-employee-csv` Skillを使って検証し、結果を報告してください。
 
 | 段階 | 参照・実行するもの | 確認すること |
 |---|---|---|
-| 仕様を確認 | **Instructions** | 半開区間、不正区間の例外、既存テストの保護 |
+| 仕様を確認 | **Instructions** | 社員番号の先頭ゼロ保持、空欄・重複のエラー、既存テストの保護 |
 | 修正を進める | **Agent Skill** | コードとテストを読み、仕様に沿って修正する |
 | 結果を確かめる | **検証スクリプト** | `python scripts/verify.py`の結果と終了コード |
 | 必要なら再修正 | **Skillの手順に戻る** | 失敗原因を直して再検証し、未確認事項も報告する |
 
-**期待する結果**：境界が接する区間は重複せず、不正な区間では例外になる。検証結果をコマンドとログで確認する。
+**期待する結果**：社員番号`00123`はそのまま残り、空欄・重複では行番号付きのエラーになる。検証結果をコマンドとログで確認する。
 
 <small>実際の運用では、Skillの参照と検証コマンドの実行をログで確かめます。</small>
 
@@ -392,7 +395,7 @@ my-project/
 
 ### 小さく始める3ステップ
 
-1. **よくある失敗を3つ集める**：間違ったテストコマンド、境界条件漏れ、API互換性の破壊など
+1. **よくある失敗を3つ集める**：社員番号の先頭ゼロ消失、入力チェック漏れ、間違ったテストコマンドなど
 2. **一つだけファイル化する**：まずInstructions。繰り返す作業ならSkillも作る
 3. **検証結果を残す**：実際にテストを実行したか、人の修正がどこで必要だったか
 
