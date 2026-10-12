@@ -18,7 +18,7 @@ style: |
 ### 今日から始めるAIハーネスエンジニアリング
 
 **対象**：Copilot Chatの利用経験はあるが、InstructionsやSkillsは未経験の方  
-**所要時間**：約20分（実例と実行デモを含む）
+**所要時間**：約20分（企業事例とコード例の説明・実演なし）
 
 > **今日の持ち帰り**：自分のリポジトリに、`copilot-instructions.md`、`SKILL.md`、検証スクリプトを追加できる。
 
@@ -57,36 +57,59 @@ style: |
                     実装 → 実行 → 結果を確認
 ```
 
-- **Instructions**：常時、または対象ファイルに応じて適用するルール
-- **Skills**：特定作業で使うルールと手順（Instructionsとの重複も可）
-- **検証**：ルールが守られたかを、実行結果で確認する仕組み
+**InstructionsとSkillsは、どちらもルールと手順を含められます。主な違いは、いつ読み込まれるかです。**
 
-**本質は、プロンプトを長くすることではなく、成功パターンを再利用できるようにすることです。**
+Instructionsは常時または対象ファイルに応じて適用し、Skillsは作業の内容に応じて読み込みます。重要な制約を両方に記載する場合もあります。
+
+**成功パターンをリポジトリに残し、実行結果で確かめることがハーネスの役割です。**
 
 <!-- 発表メモ：約1分。InstructionsとSkillsは「ルール」と「手順」で完全に分かれるわけではない。違いは、主にいつ読み込まれるか。モデル内部にもツール実行を扱うハーネスがあるが、今日は利用者が構築できるリポジトリ内のハーネスに絞る。 -->
 
 ---
 
-# 3. Copilotでは何をどこに置くか
+# 3. 全体像：ルールを伝え、作業を進め、結果を確かめる
 
-| 仕組み | ファイル・場所 | 使いどころ |
+| 要素 | 役割・適用される場面 | ファイル・場所 |
 |---|---|---|
-| **共通Instructions** | `.github/copilot-instructions.md` | 設計方針、禁止事項、標準テスト |
-| **対象別Instructions** | `.github/instructions/*.instructions.md` | `src/solver/**`だけに適用するルール |
-| **Agent Skill** | `.github/skills/名前/SKILL.md` | テスト生成、障害調査、API変更 |
-| **Prompt File** | `.github/prompts/*.prompt.md` | `/review`など、明示的に呼び出す定型依頼 |
-| **検証プログラム** | 例：`scripts/verify.py` | AIと人が同じチェックを実行する |
+| **Instructions** | 共通ルールは常時、対象別ルールは該当ファイルの作業時に適用 | 共通：`.github/copilot-instructions.md`<br>対象別：`.github/instructions/*.instructions.md` |
+| **Agent Skills** | 特定作業のルールと手順を、必要なときに読み込む | `.github/skills/名前/SKILL.md`<br>必要に応じて参考資料・スクリプトも同梱 |
+| **検証スクリプト** | テストなどを実行し、人とAIが同じ基準で結果を確認する | 例：`scripts/verify.py`<br>プロジェクト独自に用意するプログラム |
 
-- まず必要なのは、**上の3種類（Instructions、Skill、検証スクリプト）**です。MCPや複数エージェントは後回しで構いません。
-- 実行環境（VS Code、CLI、クラウドエージェント）によって、対応機能には差があります。
+**この順に各要素の意味と具体例を説明し、最後にPythonの修正例で組み合わせを見ます。**
 
-<small>出典：[GitHub公式 カスタマイズ一覧](https://docs.github.com/en/copilot/reference/customization-cheat-sheet)、[Skillの配置と仕様](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)</small>
+<small>実行環境によって対応機能は異なります。出典：[GitHub公式 カスタマイズ一覧](https://docs.github.com/en/copilot/reference/customization-cheat-sheet)、[Agent Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)</small>
 
-<!-- 発表メモ：約1分20秒。Prompt Fileは明示的に呼び出すテンプレート、Skillはタスクに応じてエージェントが読み込む作業パッケージ。別物であることを先に押さえる。 -->
+<!-- 発表メモ：約1分20秒。今日はこの3要素を扱う。Instructionsの共通版と対象別版は同じ要素の適用範囲の違い。検証スクリプトはCopilot専用の設定形式ではなく、自分たちで用意する通常のプログラム。以降はInstructions、Agent Skills、検証の順に、説明と企業事例を一組ずつ示す。 -->
 
 ---
 
-# 4. 企業の実例① Microsoft VS Code：対象ごとのInstructions
+# 4. Instructions：プロジェクトの前提を継続的に伝える
+
+**Instructionsは、Copilotが作業時に参照するプロジェクトの指示書です。** 共通版はリポジトリ全体、対象別版は指定したファイルに適用します。
+
+**例：`.github/copilot-instructions.md`（作業時間の区間を扱うプロジェクト）**
+
+```markdown
+# Project Instructions
+- 区間は半開区間 [start, end) とする。
+- 終了時刻 = 次の開始時刻なら、重複ではない。
+- start >= end は ValueError とする。
+- 公開関数の引数と戻り値を変更しない。
+- 既存テストを削除・無効化しない。
+- 変更後は python scripts/verify.py を実行する。
+- 実行結果と未検証事項を区別して報告する。
+```
+
+**書くべきこと**：業務仕様、設計上の約束、避けたい失敗、正しい検証方法。<br>
+**書かなくてよいこと**：一般的な「可読性に配慮する」「ベストプラクティスに従う」だけの長文。
+
+<small>仕様：[GitHub公式 リポジトリInstructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)</small>
+
+<!-- 発表メモ：約1分20秒。現場で本当に効くのは「どこが非自明か」。規約が多い場合は、長大な一枚のファイルではなく、docsへの参照や対象別Instructionsを利用する。これは自作例であり、企業の実ファイルではない。 -->
+
+---
+
+# 5. Instructionsの実例：Microsoft VS Code
 
 **実例**：`microsoft/vscode/.github/instructions/buildNext.instructions.md`
 
@@ -112,7 +135,36 @@ applyTo: build/next/**
 
 ---
 
-# 5. 企業の実例② Shopify：SKILL.mdは手順書とツールの集合
+# 6. Agent Skills：特定作業のルールと手順をまとめる
+
+**Agent Skillは、特定作業で必要になる指示・参考資料・ツールをまとめた作業パッケージです。** Copilotはタスクとの関連性から必要なSkillを読み込みます。
+
+**例：`.github/skills/verify-schedule/SKILL.md`**
+
+```markdown
+---
+name: verify-schedule
+description: 区間判定ロジックの変更時に検証する手順
+---
+
+1. src/schedule.py と tests/ を読む。
+2. 半開区間と不正区間の仕様を確認する。
+3. 既存テストを変更せず、実装を修正する。
+4. python scripts/verify.py を実行する。
+5. 失敗したら原因を修正し、再実行する。
+6. 変更点、テスト結果、未確認事項を報告する。
+```
+
+- `description`に、**どんなタスクで使うか**を記載する
+- 読み込みや手順の実行を確かめる。必要なら「verify-schedule Skillを使って」と明記する
+
+<small>仕様：[GitHub公式 Agent Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)</small>
+
+<!-- 発表メモ：約1分20秒。Skillはプロンプトのスニペットではなく、必要時に読み込む作業パッケージ。作業固有の制約、検索用スクリプト、設計資料も同じフォルダに置ける。Instructionsと一部重複してもよい。CLIでは /skills list と /skills info で登録状態を確認できる。 -->
+
+---
+
+# 7. Agent Skillsの実例：Shopify
 
 **公開リポジトリ**：`Shopify/agent-skills` の `shopify-functions`
 
@@ -125,7 +177,7 @@ AIに伝えている内容の例：
 
 ```text
 shopify-functions/
-├── SKILL.md              ← どう実装するか
+├── SKILL.md              ← 作業のルールと手順
 ├── scripts/search_docs.js ← 何が正しいか調べる
 ├── scripts/validate.js    ← コードを検証する
 └── assets/                ← APIスキーマなど
@@ -135,133 +187,15 @@ shopify-functions/
 
 <small>出典：[ShopifyのSkills](https://github.com/Shopify/agent-skills)、[shopify-functions/SKILL.md](https://github.com/Shopify/agent-skills/blob/main/shopify-functions/SKILL.md)</small>
 
-<!-- 発表メモ：約1分20秒。Shopifyは主にClaude Code向けに公開しているが、Skill形式はCopilotもサポートする。事例の意義は、特定の開発バージョンに応じて変わり得る。 -->
+<!-- 発表メモ：約1分20秒。Shopifyは主にClaude Code向けに公開しているが、Skill形式はCopilotもサポートする。公開例はルール・手順・検証ツールをまとめる構成の参考になる。 -->
 
 ---
 
-# 6. 企業の実例③ StripeとSpotify：「テストしろ」で終わらせない
+# 8. 検証スクリプト：共通のコマンドで結果を確かめる
 
-| 企業・仕組み | 実際に用意した仕組み | 狙い |
-|---|---|---|
-| **Stripe / Minions** | 実装 → LLM → Lint → 決定的処理 → CI → エラー修正 → LLM | 重要な処理をAIの判断だけに任せない |
-| **Spotify / Honk** | リポジトリに合うVerifierを自動選択。`pom.xml`があればMaven向けを実行 | テストコマンドをAIに推測させない |
-| **Spotify / Honk** | 元の依頼と差分を別LLMが比較 | 不要なリファクタリングやテスト無効化を検出 |
+**検証スクリプトは、テストや静的解析を実行し、成功・失敗を返すプログラムです。** 人とCopilotが同じコマンドを使えます。
 
-Stripeでは、Minionsが作成したPRのうち**週1,300件超**が人のレビュー後にマージされたと報告されています（2026年2月）。ただし、この件数は**特定の設定ファイル単体の効果**を示すものではありません。
-
-**まねしたい点**：最初は、共通の `verify.py` を一つ用意するだけでもよい。
-
-<small>出典：[Stripe Minions Part 2](https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents-part-2)、[Spotify Honk Part 3](https://engineering.atspotify.com/2025/12/feedback-loops-background-coding-agents-part-3)</small>
-
-<!-- 発表メモ：約1分20秒。高度なBlueprintsやMCPをまねる必要はない。「テストの実行をAIにお願いする」から「同じ検証プログラムを用意する」、さらにCIの必須チェックにする、という順番で進められる。 -->
-
----
-
-# 7. では、自分のCopilotで何を作るか
-
-**題材：作業区間の重複判定を修正する、小さなPythonプロジェクト**
-
-仕様：
-
-- `[9, 12)` と `[11, 14)` → **重複する**
-- `[9, 12)` と `[12, 15)` → **重複しない**（境界が接するだけ）
-- `[12, 12)` → **不正な区間として例外**
-
-ありがちなAIのミス：
-
-```python
-# 誤り：終了時刻 == 開始時刻も重複扱いになる
-if start_a <= end_b and start_b <= end_a:
-    return True
-```
-
-**狙い**：難しいアルゴリズムではなく、**仕様を教える・作業手順を教える・結果を確かめる**という仕組みを見る。
-
-<!-- 発表メモ：約1分20秒。全員が理解しやすい半開区間を題材にする。デモZIPには、意図的に2件のバグと4件のテストを入れてある。 -->
-
----
-
-# 8. 追加するファイルは、まずこの3つ
-
-```text
-my-project/
-├── .github/
-│   ├── copilot-instructions.md        ① 共通ルール
-│   ├── instructions/
-│   │   └── schedule.instructions.md   ①' 対象固有のルール
-│   └── skills/
-│       └── verify-schedule/
-│           └── SKILL.md               ② 特定作業のルールと手順
-├── scripts/
-│   └── verify.py                      ③ 機械的な検証
-├── src/schedule.py
-└── tests/test_schedule.py
-```
-
-- **最小構成は3種類**：Instructions、Skill、検証スクリプト
-- 対象別Instructionsは必要になったときに追加する
-- すべてリポジトリに含め、メンバーが同じものを使えるようにする
-
-<!-- 発表メモ：約1分20秒。ファイルを大量に増やすこと自体が目的ではない。共通ルールが短ければまずそれだけでよい。デモでは比較のため対象別Instructionsも収録している。 -->
-
----
-
-# 9. ① Instructions：仕様と禁止事項を「毎回」渡す
-
-**`.github/copilot-instructions.md`（今回の再現例）**
-
-```markdown
-# Project Instructions
-- 区間は半開区間 [start, end) とする。
-- 終了時刻 = 次の開始時刻なら、重複ではない。
-- start >= end は ValueError とする。
-- 公開関数の引数と戻り値を変更しない。
-- 既存テストを削除・無効化しない。
-- 変更後は python scripts/verify.py を実行する。
-- 実行結果と未検証事項を区別して報告する。
-```
-
-**書くべきこと**：業務仕様、設計上の約束、避けたい失敗、正しい検証方法。  
-**書かなくてよいこと**：一般的な「可読性に配慮する」「ベストプラクティスに従う」だけの長文。
-
-<small>仕様：[GitHub公式 リポジトリInstructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)</small>
-
-<!-- 発表メモ：約1分20秒。現場で本当に効くのは「どこが非自明か」。規約が多い場合は、長大な一枚のファイルではなく、docsへの参照や対象別Instructionsを利用する。これは自作例であり、企業の実ファイルではない。 -->
-
----
-
-# 10. ② Skill：特定作業のルールと手順を再利用する
-
-**`.github/skills/verify-schedule/SKILL.md`（今回の再現例）**
-
-```markdown
----
-name: verify-schedule
-description: 区間判定ロジックの変更時に検証する手順
----
-
-1. src/schedule.py と tests/ を読む。
-2. 半開区間と不正区間の仕様を確認する。
-3. 既存テストを削除せず修正する。
-4. python scripts/verify.py を実行する。
-5. 失敗したら原因を修正し、再実行する。
-6. 変更点、テスト結果、未確認事項を報告する。
-```
-
-- `description`は、**どんなタスクのときに使うか**が分かるようにする
-- Skillには、手順だけでなく、その作業で守る制約も記載できる
-- Copilotは関連性からSkillを選ぶが、**毎回の自動実行が保証されるわけではない**
-- 必要なら、プロンプトに「verify-schedule Skillを使って」と明記する
-
-<small>仕様：[GitHub公式 Agent Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)</small>
-
-<!-- 発表メモ：約1分20秒。Skillはプロンプトのスニペットではなく、必要時に読み込む作業パッケージ。作業固有の制約、検索用スクリプト、設計資料も同じフォルダに置ける。Instructionsと一部重複してもよい。CLIでは /skills list と /skills info で登録状態を確認できる。 -->
-
----
-
-# 11. ③ Verifier：Copilotの「テスト成功」を自己申告で終わらせない
-
-**`scripts/verify.py`（今回の再現例・要点のみ）**
+**例：`scripts/verify.py`で既存のユニットテストを実行する**
 
 ```python
 import subprocess
@@ -285,27 +219,91 @@ sys.exit(result.returncode)
 
 ---
 
-# 12. 2分デモ：同じ依頼がどう変わるか
+# 9. 検証の実例：StripeとSpotify
 
-**準備済みプロジェクトをVS Codeで開く（Agentモード）**
+| 企業・仕組み | 実際に用意した仕組み | 狙い |
+|---|---|---|
+| **Stripe / Minions** | 実装 → LLM → Lint → 決定的処理 → CI → エラー修正 → LLM | 重要な処理をAIの判断だけに任せない |
+| **Spotify / Honk** | リポジトリに合うVerifierを自動選択。`pom.xml`があればMaven向けを実行 | テストコマンドをAIに推測させない |
+| **Spotify / Honk** | 元の依頼と差分を別LLMが比較 | 不要なリファクタリングやテスト無効化を検出 |
 
-**まず初期状態のテストを確認**
+Stripeでは、Minionsが作成したPRのうち**週1,300件超**が人のレビュー後にマージされたと報告されています（2026年2月）。ただし、この件数は**特定の設定ファイル単体の効果**を示すものではありません。
 
-```console
-$ python scripts/verify.py
-... FAIL: test_touching_is_not_overlap
-... FAIL: test_invalid_interval
-FAIL
+**まねしたい点**：最初は、共通の `verify.py` を一つ用意するだけでもよい。
+
+<small>出典：[Stripe Minions Part 2](https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents-part-2)、[Spotify Honk Part 3](https://engineering.atspotify.com/2025/12/feedback-loops-background-coding-agents-part-3)</small>
+
+<!-- 発表メモ：約1分20秒。高度なBlueprintsやMCPをまねる必要はない。「テストの実行をAIにお願いする」から「同じ検証プログラムを用意する」、さらにCIの必須チェックにする、という順番で進められる。 -->
+
+---
+
+# 10. 説明例：作業区間の重複判定を修正する
+
+**題材：作業区間の重複判定を修正する、小さなPythonプロジェクト**
+
+仕様：
+
+- `[9, 12)` と `[11, 14)` → **重複する**
+- `[9, 12)` と `[12, 15)` → **重複しない**（境界が接するだけ）
+- `[12, 12)` → **不正な区間として例外**
+
+ありがちなAIのミス：
+
+```python
+# 誤り：終了時刻 == 開始時刻も重複扱いになる
+if start_a <= end_b and start_b <= end_a:
+    return True
 ```
 
-**Copilotへの依頼**
+**狙い**：難しいアルゴリズムではなく、**仕様を教える・作業手順を教える・結果を確かめる**という仕組みを見る。
 
-> `src/schedule.py`の`has_conflict`を修正してください。区間は`[start, end)`です。**既存テストは変更しないで**ください。`verify-schedule` Skillを使って検証し、結果を報告してください。
+<!-- 発表メモ：約1分20秒。ここからは実演せず、半開区間のコード例で3要素の組み合わせを説明する。境界が接するケースと不正な区間への対応を修正対象として示す。 -->
 
-**観察すること**：①仕様を確認したか ②Skillを参照したか ③テストを実行したか ④失敗後に修正したか  
-**終了条件**：テスト成功。デモの成功を事前に保証するものではありません。
+---
 
-<!-- 発表メモ：約2分20秒。デモZIPで事前に2失敗を実測済み。ライブ実行が不安定なら結果ログを示す。「ハーネスなし」との比較は、.githubを取り除いたコピーで同じ依頼を実行する。期待する結果を混ぜない。 -->
+# 11. 説明例のファイル構成
+
+```text
+my-project/
+├── .github/
+│   ├── copilot-instructions.md        ① 共通ルール
+│   ├── instructions/
+│   │   └── schedule.instructions.md   ①' 対象固有のルール
+│   └── skills/
+│       └── verify-schedule/
+│           └── SKILL.md               ② 特定作業のルールと手順
+├── scripts/
+│   └── verify.py                      ③ 機械的な検証
+├── src/schedule.py
+└── tests/test_schedule.py
+```
+
+- この例では、#3で示した**3要素**をファイルとして用意する
+- 対象別Instructionsは必要になったときに追加する
+- すべてリポジトリに含め、メンバーが同じものを使えるようにする
+
+<!-- 発表メモ：約1分20秒。必須のファイル数を示す図ではなく、説明例の構成。対象別Instructionsは任意の追加で、共通ルールだけでも始められる。各論で示したファイルが一つのリポジトリに集まることを説明する。 -->
+
+---
+
+# 12. 説明例：3要素を組み合わせた修正の流れ
+
+**Copilotへの依頼例**
+
+> `src/schedule.py`の`has_conflict`を修正してください。既存テストは変更せず、`verify-schedule` Skillを使って検証し、結果を報告してください。
+
+| 段階 | 参照・実行するもの | 確認すること |
+|---|---|---|
+| 仕様を確認 | **Instructions** | 半開区間、不正区間の例外、既存テストの保護 |
+| 修正を進める | **Agent Skill** | コードとテストを読み、仕様に沿って修正する |
+| 結果を確かめる | **検証スクリプト** | `python scripts/verify.py`の結果と終了コード |
+| 必要なら再修正 | **Skillの手順に戻る** | 失敗原因を直して再検証し、未確認事項も報告する |
+
+**期待する結果**：境界が接する区間は重複せず、不正な区間では例外になる。検証結果をコマンドとログで確認する。
+
+<small>実際の運用では、Skillの参照と検証コマンドの実行をログで確かめます。</small>
+
+<!-- 発表メモ：約2分20秒。実演は行わない。依頼文から仕様確認、Skillの参照、修正、検証、報告へ進む流れを表で説明する。Skill内にも仕様確認やテスト保護のルールが含まれることを指摘する。読み込みや実行が必ず行われるわけではないため、実際の運用ではログを確認する。 -->
 
 ---
 
@@ -340,7 +338,7 @@ FAIL
 > Copilotに毎回同じ注意をするなら、その注意はチャットではなく**リポジトリに残す**。  
 > 「検証して」と頼むなら、**検証用のコマンドを用意する**。
 
-**デモ用ファイルと出典は、同梱READMEと下記リンクを参照してください。**
+**企業事例と対応機能の詳細は、下記の出典を参照してください。**
 
 - [Microsoft VS CodeのInstructions](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md)
 - [ShopifyのAgent Skills](https://github.com/Shopify/agent-skills)
