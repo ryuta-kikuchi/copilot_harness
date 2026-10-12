@@ -89,13 +89,15 @@ style: |
 
 **Instructionsは、Copilotが作業時に参照するプロジェクトの指示書です。** 共通版はリポジトリ全体、対象別版は指定したファイルに適用します。
 
-**例：`.github/copilot-instructions.md`（作業時間の区間を扱うプロジェクト）**
+**例：開始・終了時刻から、2つの作業時間が重なるかを判定するPythonプロジェクト**（後半で詳しく説明）
+
+共通の指示を、`.github/copilot-instructions.md`に記載します。
 
 ```markdown
 # Project Instructions
 - 区間は [start, end)（開始を含み、終了を含まない）とする。
 - 終了時刻 = 次の開始時刻なら、重複ではない。
-- start >= end は ValueError とする。
+- start >= end は ValueError（不正な入力の例外）とする。
 - 公開関数の引数と戻り値を変更しない。
 - 既存テストを削除・無効化しない。
 - 変更後は python scripts/verify.py を実行する。
@@ -206,6 +208,8 @@ node build/next/index.ts transpile --out out-test
 
 **例：`.github/skills/verify-schedule/SKILL.md`**
 
+先ほどの重複判定を修正する作業用です。`src/schedule.py`は判定コード、`tests/`はその動作を確認するテストの保存先です。
+
 ```markdown
 ---
 name: verify-schedule
@@ -231,9 +235,11 @@ description: 区間判定ロジックの変更時に検証する手順
 
 # 5.1 Agent Skillsの実例：Shopify
 
-**背景**：ShopifyはECサイトの基盤です。Shopify Functionsでは、割引などの処理を開発者が追加できます。その実装をAIに依頼するときのSkillが、`shopify-functions`です。
+**作業背景**：ShopifyはECサイトの基盤です。Shopify Functionsでは、割引などの処理を開発者が追加できます。例えば「購入条件に応じた割引を実装して」とAIに依頼する場面です。
 
-**スキーマ**は、利用できるデータ項目と型を定義したもの。AIが存在しない項目を使うと、正しく実装できません。
+**必要な前提**：使えるデータ項目と型は、Shopifyの「スキーマ」で決まっています。項目を推測して実装すると、存在しないデータを使う誤りにつながります。
+
+そこで、`shopify-functions/SKILL.md`に次のルールと手順を記載しています（原文の日本語要約）。
 
 1. 実装前に**公式ドキュメントを検索**する
 2. スキーマに存在しないフィールドを**推測で追加しない**
@@ -244,31 +250,31 @@ description: 区間判定ロジックの変更時に検証する手順
 
 <small>出典：[ShopifyのSkills](https://github.com/Shopify/agent-skills)、[shopify-functions/SKILL.md](https://github.com/Shopify/agent-skills/blob/main/shopify-functions/SKILL.md)</small>
 
-<!-- 発表メモ：約1分20秒。Shopifyは主にClaude Code向けに公開しているが、Skill形式はCopilotもサポートする。公開例はルール・手順・検証ツールをまとめる構成の参考になる。 -->
+<!-- 発表メモ：約1分20秒。割引の実装依頼は説明用の場面で、特定の企業内タスクを再現したものではない。スキーマは使えるデータ項目と型の定義。「割引を作って」と頼むだけではShopify固有の制約を十分に渡せないため、公式資料を調べてから実装し、確認まで行う手順をSkillに残す。公開Skillは主にClaude Codeなど向けで、Copilot専用の実例ではない。 -->
 
 ---
 
 # 6. 検証スクリプト：共通のコマンドで結果を確かめる
 
-**検証スクリプトは、テストなどを実行し、成功・失敗を返すプログラムです。** 人とCopilotが同じコマンドを使えます。
+**背景**：重複判定を直したら、既存テストで仕様どおりか確認します。人とAIが同じ確認を行えるよう、テストを起動する検証スクリプトを用意します。
 
-**例：`scripts/verify.py`が、`tests/`内の既存テストをまとめて実行する**
+**共通の確認コマンド**：`python scripts/verify.py`
+
+**`verify.py`の中身**：`tests/`内のテストをまとめて実行し、ログと成功・失敗を返す。
 
 ```python
 import subprocess
 import sys
 
 result = subprocess.run(
-    [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
-    capture_output=True, text=True, check=False
+    [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"]
 )
-print((result.stdout + result.stderr)[-4000:])
 sys.exit(result.returncode)
 ```
 
-- 人もCopilotも**同じ一つのコマンド**を使う：`python scripts/verify.py`
+- `subprocess.run`がテストを起動し、`sys.exit`がテストの終了コードを呼び出し元へ返す
 - **終了コード**は、実行したプログラムが返す数値。この例ではテストの成功を0、失敗を0以外で返す
-- 成功は**実行したテストの範囲**での結果。必要なテストがなければ、不具合を見逃す
+- 成功は**実行したテストの範囲**での結果。すべての正しさを保証するものではない
 
 <small>着想：[SpotifyのVerifier](https://engineering.atspotify.com/2025/12/feedback-loops-background-coding-agents-part-3)。上記は発表用に自作したプログラム。</small>
 
@@ -276,29 +282,49 @@ sys.exit(result.returncode)
 
 ---
 
-# 6.1 検証の実例：StripeとSpotify
+# 6.1 Stripeの実例：確認処理を必ず実行する
 
-**背景**：人が付き添わずにコードを変更する社内エージェントでは、変更後の確認も仕組みとして用意しています。
+**作業背景**：決済サービスのStripeでは、社内エージェント「Minions」が、人の付き添いなしでコードを変更します。変更内容は、取り込む前に人がレビューします。
 
-| 企業・仕組み | 実際に用意した仕組み | 狙い |
-|---|---|---|
-| **Stripe / Minions** | AIによる実装・修正と、定められた手順による形式チェックやCIの実行を組み合わせる | 重要な処理をAIの判断だけに任せない |
-| **Spotify / Honk** | Verifier（検証処理）を自動選択。Mavenの設定ファイルがあれば、そのビルド・テスト用の検証を実行 | テストコマンドをAIに推測させない |
-| **Spotify / Honk** | 元の依頼とコードの変更内容を、別のAIが比較 | 不要なリファクタリングやテスト無効化を検出 |
+**課題**：AIに「最後にチェックして」と指示するだけでは、実行するかどうかもAIの判断に依存します。
 
-Stripeでは、Minionsが作成したPRのうち**週1,300件超**が人のレビュー後にマージされたと報告されています（2026年2月）。ただし、この件数は**特定の設定ファイル単体の効果**を示すものではありません。
+**仕組み**：コードで定義した作業の流れに、AIが実装・修正する工程と、決まったチェックを実行する工程を組み込みます。
 
-**まねしたい点**：最初は、共通の `verify.py` を一つ用意するだけでもよい。
+1. AIが依頼された変更を実装する
+2. 形式チェックを、AIへの依頼を介さずプログラムで実行する
+3. CIで関連テストを実行し、必要ならAIに修正を戻す
 
-<small>出典：[Stripe Minions Part 2](https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents-part-2)、[Spotify Honk Part 3](https://engineering.atspotify.com/2025/12/feedback-loops-background-coding-agents-part-3)</small>
+**まねしたい点**：重要な確認は、指示書に書くだけでなく、実行の仕組みに組み込む。
 
-<!-- 発表メモ：約1分20秒。Mavenは主にJavaで使うビルドツールで、pom.xmlはその設定ファイル。Spotifyではこれを手掛かりに検証を選ぶ。AIによる変更内容の比較も完全な保証ではない。自分のチームでは共通の検証プログラムを用意し、さらにCIの必須チェックにする、という順番で進められる。 -->
+<small>出典：[Stripe Minions Part 2](https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents-part-2)。作業の流れは原文の要約。</small>
+
+<!-- 発表メモ：約40秒。原文のBlueprintsはコードで定義したワークフロー。形式チェックの実行はLLMを呼ばずにコードで行う。AIの柔軟な実装と、決まった確認処理を組み合わせる例。原文ではローカルのチェックとCIを使い分け、CIの再試行回数にも上限を設けている。確認すれば全ての不具合を防げるという意味ではない。参考情報として、Stripeは週1,300件超のMinions作成PR（コードの変更提案）が人のレビュー後に取り込まれると報告している（2026年2月）。特定の設定ファイル単体の効果を示す件数ではない。 -->
+
+---
+
+# 6.2 Spotifyの実例：プロジェクトに合う検証を選ぶ
+
+**作業背景**：Spotifyの社内エージェント「Honk」は、多数のプロジェクトのコードを変更します。プロジェクトによってビルドやテストの方法が異なります。
+
+**課題**：AIが確認コマンドを選べない、またはテストに通っても依頼外の変更を加える場合があります。
+
+**仕組み**：Verifier（検証処理）が、設定ファイルから実行するチェックを選びます。例えばMavenという主にJava向けのビルドツールでは、設定ファイルが`pom.xml`です。
+
+1. `pom.xml`を見つけたら、Maven向けの検証処理を選ぶ
+2. ビルドやテストを実行し、結果をAIに返す。失敗したら修正を促す
+3. 別のAIが依頼文と変更内容を比較し、不要な修正やテスト無効化も確認する
+
+**まねしたい点**：確認方法を共通の入口にまとめ、AIにコマンドの推測をさせない。
+
+<small>出典：[Spotify Honk Part 3](https://engineering.atspotify.com/2025/12/feedback-loops-background-coding-agents-part-3)。別AIによる判定も、正しさの完全な保証ではありません。</small>
+
+<!-- 発表メモ：約40秒。先にプロジェクトごとに確認方法が異なることを説明し、それからMavenとpom.xmlを紹介する。検証は設定ファイルを手掛かりに選ばれ、エージェントは共通の検証用ツールを呼ぶ。原文ではPRを作る前にも検証を必須実行している。別AIの比較はビルドやテストとは別の確認で、依頼の範囲を逸脱していないかを見る。 -->
 
 ---
 
 # 7. 説明例：作業区間の重複判定を修正する
 
-**題材：作業区間の重複判定を修正する、小さなPythonプロジェクト**
+**作業背景**：同じ担当者の作業時間が重複していないかを判定します。9～12時と12～15時は続けて担当できるため、重複としない仕様です。
 
 **`[start, end)`は「開始を含み、終了を含まない」区間（半開区間）です。** 例えば`[9, 12)`は9時から12時まで、12時ちょうどは含みません。
 
@@ -306,7 +332,7 @@ Stripeでは、Minionsが作成したPRのうち**週1,300件超**が人のレ�
 - `[9, 12)` と `[12, 15)` → **重複しない**（境界が接するだけ）
 - `[12, 12)` → **不正な区間として例外**
 
-ありがちなAIのミス：
+**誤った実装例**：`start_a`・`end_a`は作業Aの開始・終了、`start_b`・`end_b`は作業Bの開始・終了です。
 
 ```python
 # 誤り：終了時刻 == 開始時刻も重複扱いになる
@@ -333,8 +359,8 @@ my-project/
 │           └── SKILL.md               ② 特定作業のルールと手順
 ├── scripts/
 │   └── verify.py                      ③ 機械的な検証
-├── src/schedule.py
-└── tests/test_schedule.py
+├── src/schedule.py                    重複を判定するコード
+└── tests/test_schedule.py             判定結果を確認するテスト
 ```
 
 - この例では、#3で示した**3要素**をファイルとして用意する
@@ -349,7 +375,7 @@ my-project/
 
 **Copilotへの依頼例**
 
-> `src/schedule.py`の`has_conflict`を修正してください。既存テストは変更せず、`verify-schedule` Skillを使って検証し、結果を報告してください。
+> `src/schedule.py`の重複判定関数`has_conflict`を修正してください。既存テストは変更せず、`verify-schedule` Skillを使って検証し、結果を報告してください。
 
 | 段階 | 参照・実行するもの | 確認すること |
 |---|---|---|
