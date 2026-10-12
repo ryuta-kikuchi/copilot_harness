@@ -30,45 +30,55 @@ Copilotにコードの修正を依頼すると、次のような問題が起こ�
 
 # 2. ハーネスとは、AIが作業するための周辺環境
 
-```text
-                    GitHub Copilotのエージェント
-                              │
-             ┌────────────────┼────────────────┐
-             │                │                │
-       常に適用する      特定作業で使う      結果を検証する
-       ルール             ルールと手順        仕組み
-       Instructions         Skills          テスト / CI
-             │                │                │
-             └────────────────┴────────────────┘
-                              │
-                    実装 → 実行 → 結果を確認
-```
+**ハーネスは、AIモデルの周囲で、指示の読み込み・ツール実行・権限・作業の進行を扱う仕組みです。** Copilotが提供する仕組みを、利用者が自分のプロジェクトに合わせて設定します。
+
+この勉強会では、まず次の3機能を扱います。
+
+- **Instructions**：プロジェクトの前提やルールを伝える
+- **Skills**：特定作業のルール・手順・参考資料をまとめる
+- **Hooks**：決めたイベントで、処理を自動実行する
 
 **InstructionsとSkillsは、どちらもルールと手順を含められます。主な違いは、いつ読み込まれるかです。**
 
-エージェントは、指示を参照しながらファイルの編集やコマンドの実行を進めます。Instructionsは常時または対象ファイルに応じて、Skillsは作業の内容に応じて読み込みます。
+Hooksは、設定したイベントで処理を起動します。「その処理を実行するか」をLLMの判断に委ねない点が異なります。
 
-**成功パターンをリポジトリに残し、実行結果で確かめることがハーネスの役割です。**
+<small>出典：[VS Codeのカスタマイズの考え方](https://code.visualstudio.com/docs/agents/concepts/customization)。ハーネスの設定は、この3機能以外にもあります。</small>
 
-<small>CI：コード変更時に、サーバー側でビルドやテストなどを自動実行する仕組み。</small>
-
-<!-- 発表メモ：約1分。InstructionsとSkillsは「ルール」と「手順」で完全に分かれるわけではない。違いは、主にいつ読み込まれるか。モデル内部にもツール実行を扱うハーネスがあるが、今日は利用者が構築できるリポジトリ内のハーネスに絞る。 -->
+<!-- 発表メモ：約1分。ハーネス全体はInstructionsとSkillsを書くことだけではない。ここでは利用者が設定する入口として3機能を選ぶ。指示をモデルが解釈することと、イベントで処理が起動することを区別する。Hooksの処理自体の成功や、コードの正しさを保証する意味ではない。 -->
 
 ---
 
-# 3. 全体像：ルールを伝え、作業を進め、結果を確かめる
+# 3. 全体像：何をどこに設定するか
 
-| 要素 | 役割・適用される場面 | ファイル・場所 |
+| 機能 | 設定するもの | リポジトリ内の場所 |
 |---|---|---|
-| **Instructions** | 共通ルールは常時、対象別ルールは該当ファイルの作業時に適用 | 共通：`.github/copilot-instructions.md`<br>対象別：`.github/instructions/*.instructions.md` |
-| **Agent Skills** | 特定作業のルールと手順を、必要なときに読み込む | `.github/skills/名前/SKILL.md`<br>必要に応じて参考資料・スクリプトも同梱 |
-| **検証** | ビルド・テストを実行し、変更の結果を確認する | 既存の確認コマンド、CI、検証用ツール |
+| **Instructions** | 共通の規約、対象ごとの注意点、検証方針 | 共通：`.github/copilot-instructions.md`<br>対象別：`.github/instructions/*.instructions.md` |
+| **Agent Skills** | 特定作業のルール、手順、参考資料 | `.github/skills/名前/SKILL.md`など |
+| **Hooks** | イベントと、その時に実行するコマンド | `.github/hooks/*.json`など<br>実行するスクリプトも用意する |
 
-**VS Codeの公開実例で、Instructions・Skills・変更後の検証を説明します。**
+**検証方法を伝えるならInstructionsやSkills、決まったタイミングで処理を実行するならHooksです。**
 
-<small>実行環境によって対応機能は異なります。出典：[GitHub公式 カスタマイズ一覧](https://docs.github.com/en/copilot/reference/customization-cheat-sheet)、[Agent Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)</small>
+InstructionsとSkillsはVS Codeの公開リポジトリ、HooksはVS Code公式ドキュメントの設定例で説明します。
 
-<!-- 発表メモ：約1分20秒。今日はこの3要素を扱う。Instructionsの共通版と対象別版は同じ要素の適用範囲の違い。検証は特定の設定ファイル形式ではなく、ビルド・テスト・CIや専用ツールを使う仕組み。以降はInstructions、Agent Skills、検証の順に、説明と企業事例を一組ずつ示す。 -->
+<small>出典：[カスタマイズの全体像](https://code.visualstudio.com/docs/agents/concepts/customization)、[Hooksの設定](https://code.visualstudio.com/docs/agent-customization/hooks)。対応機能や設定形式は実行環境で異なります。</small>
+
+<!-- 発表メモ：約1分20秒。検証を独立した第三の設定と呼ばず、InstructionsやSkillsに検証方針を残し、必要ならHooksで確認処理を起動する関係を説明する。HooksはVS Codeの公開リポジトリで実運用されている例ではなく、公式ドキュメントの例を扱う。 -->
+
+---
+
+# 3.1 ほかのカスタマイズ機能
+
+| 機能 | 使う場面 |
+|---|---|
+| **Prompt Files** | レビュー依頼などの定型文を保存し、明示的に呼び出す |
+| **Custom Agents** | レビュー役など、役割と使えるツールをまとめて設定する |
+| **MCP** | 外部システムを操作するツールを追加する。例：データベースや課題管理との連携 |
+
+**まず困っていることに合う機能から始めます。** プロジェクトの前提不足ならInstructions、作業固有の知識ならSkills、イベントでの実行ならHooksを選びます。
+
+<small>出典：[VS Codeのカスタマイズ一覧](https://code.visualstudio.com/docs/agents/concepts/customization)。関連する設定をまとめて配布するPluginsもあります。</small>
+
+<!-- 発表メモ：約30秒。機能の存在と用途だけを紹介する。MCPは外部のツールを使えるようにする接続の仕組みで、作業手順を記載するSkillとは役割が異なる。全てを最初から追加する必要はない。 -->
 
 ---
 
@@ -112,7 +122,31 @@ Copilotにコードの修正を依頼すると、次のような問題が起こ�
 
 <small>出典：[VS Codeの共通Instructions](https://github.com/microsoft/vscode/blob/main/.github/copilot-instructions.md)。本文は原文の日本語要約・抜粋。規約はVS Codeプロジェクトのものです。</small>
 
-<!-- 発表メモ：約50秒。共通Instructionsの具体例として公開ファイルの内容を紹介する。インデントや命名の規約、既存コードとテストの再利用、変更に応じた検証の方針はリポジトリ全体で参照したい前提。原文にはフォルダーの役割や設計の説明も含まれる。camelCaseは先頭を小文字にし、単語の区切りを大文字で表す命名方式。ここでの共通は全世界のプロジェクトに共通の正解という意味ではなく、VS Code内での共通方針。次は特定の作業にだけ必要な確認コマンドを対象別ファイルに置く例。 -->
+<!-- 発表メモ：約50秒。共通Instructionsの具体例として公開ファイルの内容を紹介する。インデントや命名の規約、既存コードとテストの再利用、変更に応じた検証の方針はリポジトリ全体で参照したい前提。原文にはフォルダーの役割や設計の説明も含まれる。camelCaseは先頭を小文字にし、単語の区切りを大文字で表す命名方式。ここでの共通は全世界のプロジェクトに共通の正解という意味ではなく、VS Code内での共通方針。次に共通ファイルの検証方針を詳しく見てから、対象別の確認コマンドへ進む。 -->
+
+---
+
+# 4.1.1 共通Instructionsに検証方針を残す
+
+**共通Instructionsの検証方針**：大規模なビルドや型チェックには時間・資源がかかるため、変更範囲とリスクに応じて必要な確認を選びます。
+
+**公開ファイルの指示（日本語要約）**
+
+1. すでに実行中のビルドなどがあれば、まずその結果を確認する
+2. 変更した動作を確認できる、対象を絞ったテストを優先する
+3. 広い範囲の変更や型・ビルド設定の変更では、必要に応じて型チェックやビルドを行う
+
+**指示書には確認コマンドも記載（Windowsのテスト実行例）**
+
+```console
+scripts\test.bat --grep "<対象テスト名>"
+```
+
+`test.bat`は既存のテストを実行するスクリプト、`--grep`は対象をテスト名で絞る指定です。対象名は変更内容に合わせて選びます。
+
+<small>出典：[共通Instructionsの検証方針](https://github.com/microsoft/vscode/blob/main/.github/copilot-instructions.md#validating-typescript-changes)、[テスト実行スクリプト](https://github.com/microsoft/vscode/blob/main/scripts/test.bat)。コマンドの対象名は説明用の仮置きです。</small>
+
+<!-- 発表メモ：約40秒。検証は独立した設定機能ではなく、共通Instructionsに残す指示の一つ。型チェックは型の整合性を調べる処理で、画面の見やすさの確認ではない。テスト名を絞る指定は共通Instructionsに記載がある。何でもこのコマンドだけで十分とは説明しない。対象テストが存在するか、変更を確認できるかを確かめる。必要な依存関係や実行用の出力が未準備なら準備も必要になる。実演は行わない。 -->
 
 ---
 
@@ -195,9 +229,11 @@ node build/next/index.ts transpile --out out-test
 | 冒頭の`description` | どんな作業で使うか |
 | 本文 | 守るルール、作業手順、参照先、使うコマンド |
 
+通常は依頼内容と`name`・`description`から関連するSkillを選び、本文を読み込みます。Skill名を毎回指定する必要はありません。必要なら`/Skill名`で明示的に呼び出せます。
+
 次のVS Codeの実例では、画面の配色を実装・修正するときに必要なルールと具体的な実装方法を、一つのSkillにまとめています。
 
-<small>仕様：[GitHub公式 Agent Skills](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)。読み込みや手順の実行は、実際のログで確認します。</small>
+<small>仕様：[GitHub公式 Agent Skills](https://code.visualstudio.com/docs/agent-customization/agent-skills)。読み込みや手順の実行は、実際のログで確認します。</small>
 
 <!-- 発表メモ：約1分20秒。Skillの入口と本文の構成を説明した後、VS Codeの配色作業の背景、具体的なファイルの順に進む。作業固有の制約や実装方法をまとめられ、Instructionsと一部重複してもよい。必要なら使うSkillを依頼文に明記する。 -->
 
@@ -248,51 +284,110 @@ description: VS Codeの配色・テーマ対応・フォーカス表示を実装
 
 ---
 
-# 6. Copilotに変更後の確認まで依頼する
+# 6. Hooks：イベントに応じて処理を自動実行する
 
-**作業背景**：前の例で、VS Codeのパネルをテーマに対応させる修正を依頼しました。修正したコードが、意図した動作をするか確認する必要があります。
+**背景**：「最後にチェックして」と指示しても、エージェントがその処理を実行せずに終える場合があります。
 
-**Copilotのエージェントモードへの依頼例**
+**Hooksでは、いつ・何を実行するかを設定します。** セッション開始やツール実行などのイベントが起きると、登録したコマンドが実行されます。
 
-> このパネルの配色を、`ux-theming` Skillを参考に修正してください。共通Instructionsに従って必要な確認を実行し、実行内容・結果・未確認事項を報告してください。
+| タイミングの例 | 実行する処理の例 |
+|---|---|
+| ツール実行前 | 呼び出すツールを記録する、操作をチェックする |
+| ツール実行後 | 結果を確認する、コードを整形する |
+| エージェントが応答を終える前 | 完了条件を確認し、必要なら継続を要求する |
 
-**役割のつながり**
+**Instructions／Skillsはモデルへの指示、Hooksはイベントで起動する処理です。**
 
-- **Instructions**：共通の規約と、確認方法を選ぶ方針を伝える
-- **Skill**：配色の実装に必要なルールと方法を伝える
-- **検証**：変更に合うチェックを実行し、結果を確かめる
+<small>出典：[VS CodeのHooks](https://code.visualstudio.com/docs/agent-customization/hooks)。2026年10月13日時点のVS CodeのHooks機能はPreview。イベントや終了制御の仕様は実行環境で異なります。</small>
 
-<small>依頼文は公開ファイルを基にした説明例です。実演や、実際の修正・検証結果の提示は行いません。</small>
-
-<!-- 発表メモ：約1分。VS Code自身のコードをCopilotで修正する場面を説明する。ここまでの配色例を続け、コードの修正と確認を一つの依頼で伝える。Skillの読み込みや確認の実行は保証されるわけではなく、実際の参照やログを確認する。組織の設定や権限によってコマンド実行に承認が必要な場合がある。 -->
+<!-- 発表メモ：約50秒。最初に処理の実行をモデルの判断だけに任せたくない場面を説明する。Hookはイベント名とコマンドを設定する機能。完了前のイベントは応答や実行の停止時で、セッション全体の終了とは限らない。Hookの成功と成果物の正しさは別で、テストが十分か、人が見た目を確認したかは引き続き確認する。 -->
 
 ---
 
-# 6.1 VS Codeの実例：変更に合う確認方法を選ぶ
+# 6.1 VS Code公式の例：ツール実行前にログを残す
 
-**共通Instructionsの検証方針**：大規模なビルドや型チェックには時間・資源がかかるため、変更範囲とリスクに応じて必要な確認を選びます。
+**目的**：エージェントが呼び出そうとしたツールを、毎回の指示に頼らず記録します。
 
-**公開ファイルの指示（日本語要約）**
+**設定ファイル：`.github/hooks/audit.json`（Local用）**
 
-1. すでに実行中のビルドなどがあれば、まずその結果を確認する
-2. 変更した動作を確認できる、対象を絞ったテストを優先する
-3. 広い範囲の変更や型・ビルド設定の変更では、必要に応じて型チェックやビルドを行う
-
-**具体的な確認コマンドの例（Windows）**
-
-```console
-scripts\test.bat --grep "<対象テスト名>"
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "node .github/hooks/log-tool-use.cjs"
+      }
+    ]
+  }
+}
 ```
 
-`test.bat`は既存のテストを実行するスクリプト、`--grep`は対象をテスト名で絞る指定です。対象名は変更内容に合わせて選びます。
+**`PreToolUse`は「ツール実行前」です。** その都度、ログ記録スクリプトを起動します。スクリプトも別途用意し、Hookから渡される日時・ツール名をログへ追記します。
 
-<small>出典：[共通Instructionsの検証方針](https://github.com/microsoft/vscode/blob/main/.github/copilot-instructions.md#validating-typescript-changes)、[テスト実行スクリプト](https://github.com/microsoft/vscode/blob/main/scripts/test.bat)。コマンドの対象名は説明用の仮置きです。</small>
+<small>出典：[公式のLocal Hook設定例](https://code.visualstudio.com/docs/agent-customization/hooks#create-your-first-local-hook)。リンク先にログ記録スクリプトも掲載。ログは実行前の記録で、処理の成功を示すものではありません。</small>
 
-<!-- 発表メモ：約40秒。4章は指示書に何を書くか、ここはその指示に従って確認方法を選ぶ話。型チェックは型の整合性を調べる処理で、画面の見やすさの確認ではない。テスト名を絞る指定は共通Instructionsに記載がある。何でもこのコマンドだけで十分とは説明しない。対象テストが存在するか、変更を確認できるかを確かめる。必要な依存関係や実行用の出力が未準備なら準備も必要になる。実演は行わない。 -->
+<!-- 発表メモ：約50秒。公式ドキュメントの例であり、VS Code開発リポジトリの実運用例とは区別する。JSONはイベントと実行コマンドを記載する設定ファイル。コマンドが指すlog-tool-use.cjsには、入力のJSONを読み、日時とツール名をファイルへ追記するコードを書く。設定ファイルだけでは記録処理は動かない。ツール実行前なので、実行後の成功・失敗はこのログだけでは分からない。この例では実際のHookを有効化・実行しない。 -->
 
 ---
 
-# 6.2 配色の例：何を確認できたかを分けて報告する
+# 6.2 Hooksを使う前に実行環境を確認する
+
+**VS Codeのチャットには、実行先を選ぶ設定があります。** 同じVS Code内でも、実行先によってHookの仕様が異なります。
+
+| 実行先 | 参照する仕様 |
+|---|---|
+| **Local**（VS Code拡張機能側で実行） | VS Code Local Hooks。前の設定例はこちら |
+| **Copilot**（Copilotの実行基盤で実行） | GitHub Copilot Hooks。CLIと共通の実装 |
+| **Copilot CLI／Cloud** | GitHub Copilot Hooks。環境によって対応イベントが異なる |
+
+**具体的な設定手順**：実行先を選ぶ → `/hooks`で設定を確認 → その環境の形式でイベントとコマンドを記載 → 動作を確認。
+
+**テストをHookに組み込む場合**：実行するチェックに加え、失敗時にどう扱うかも設定します。終了を止める場合は、繰り返し実行の制御も必要です。
+
+<small>出典：[実行先ごとのHooks](https://code.visualstudio.com/docs/agent-customization/hooks#choose-the-hook-implementation-for-your-session)、[GitHub Copilot Hooks](https://docs.github.com/en/copilot/reference/hooks-reference)。組織の設定で利用が制限される場合があります。</small>
+
+<!-- 発表メモ：約40秒。LocalのPreToolUseとCopilotのpreToolUseなど、名前や出力形式を混ぜない。同じJSON配置場所でも仕様が同じとは限らない。Localではchat.useHooksとWorkspace Trustも確認する。LocalのStopでdecision:blockと理由を返せば継続を要求できるが、stop_hook_activeを見て無限継続を防ぐ。通常のテスト失敗の終了コードをそのまま返せば必ず終了を止められるとは説明しない。具体的な終了制御は選んだ環境のリファレンスで確認する。 -->
+
+---
+
+# 7. 自分のチームでは何を設定するか
+
+| 必要なこと | 設定するもの |
+|---|---|
+| 全体の規約や検証方針を毎回伝えたい | 共通Instructions |
+| 特定のファイルで必要な注意点を残したい | 対象別Instructions |
+| 作業固有のルール・実装方法・参照先をまとめたい | Skill |
+| イベントが起きたら処理を実行したい | Hookの設定と実行スクリプト |
+
+**検証の役割分担**：確認方法はInstructions／Skillsに記載し、自動実行が必要ならHooksを組み合わせます。実行ログと未確認事項は、利用者が確認します。
+
+<small>VS Codeのプロジェクト規約は公開ファイル、Hooksは公式ドキュメントの設定例を参照しています。</small>
+
+<!-- 発表メモ：約1分。利用者が設定する具体物を整理する。InstructionsやSkillsに書くことと、Hookで起動することを分ける。Hooksはカスタマイズ機能の一つで、テストだけの機能ではない。プロジェクトに既存のCIがあるなら、その確認も併用する。 -->
+
+---
+
+# 8. 導入後に確認すべき点と落とし穴
+
+| 起きること | まず確認すること |
+|---|---|
+| Instructionsが効かない | ルールの保存先が `.github/copilot-instructions.md` か、対応する実行環境か |
+| Skillを使ってくれない | `name`、`description`、保存場所、明示的な呼び出し |
+| テストしたと言うが怪しい | **実行したコマンドとログ**を確認する |
+| Hookが動かない | 実行先、設定形式、スクリプトの場所、実行ログを確認する |
+| 毎回同じ誤実装をする | 誤りをInstructions、Skill、テストのどこに残すべきか |
+| 設定ファイルが巨大になる | 共通ルール、対象固有ルール、作業手順に分ける |
+
+Instructions／Skillsへの記載だけで実行は保証されません。Hooksでチェックを起動する場合も、結果を確認します。共有コードに取り込む条件は、CIでも設定できます。
+
+<small>参考：[対応環境の公式一覧](https://docs.github.com/en/copilot/reference/custom-instructions-support)、[VS CodeのSkill利用](https://code.visualstudio.com/docs/agent-customization/agent-skills)、[Hooksの設定](https://code.visualstudio.com/docs/agent-customization/hooks)</small>
+
+<!-- 発表メモ：約1分20秒。Copilot ChatにはAgentやAskなどのモードがある。ファイル操作やコマンド実行が必要ならAgentモードを使う。組織のポリシーや権限により、利用できるツールが少ない場合がある。 -->
+
+---
+
+# 8.1 配色の例：実行結果と未確認事項を分ける
 
 **背景**：テストが通っても、明るい表示・暗い表示で文字や枠が見やすいかを確認できたとは限りません。
 
@@ -314,57 +409,25 @@ scripts\test.bat --grep "<対象テスト名>"
 
 ---
 
-# 7. VS Codeの実例から自分のチームに取り入れること
-
-| 要素 | VS Codeの実例 | 自分のチームで決めること |
-|---|---|---|
-| 共通Instructions | リポジトリ全体の規約と検証方針 | 毎回伝えている前提や注意点 |
-| 対象別Instructions | ビルドスクリプト向けの確認コマンド | 特定のファイルで必要になる指示 |
-| Skill | 配色作業のルール・実装方法・参照先 | 作業ごとに参照したい知識 |
-| 検証 | 変更範囲に合うチェックと結果の確認 | 実行するコマンドと、人が確認する項目 |
-
-**自分のプロジェクトにあるルールや確認方法から始めます。** Copilotに渡す指示と、実際の検証結果をセットで残します。
-
-<!-- 発表メモ：約1分。共通Instructions、対象別Instructions、Skill、検証の役割を同じリポジトリの実例で整理する。VS Code固有のコマンドや配色ルールをそのまま他のプロジェクトに持ち込むのではなく、自分のチームに相当する前提や確認方法を探す。 -->
-
----
-
-# 8. 導入後に確認すべき点と落とし穴
-
-| 起きること | まず確認すること |
-|---|---|
-| Instructionsが効かない | ルールの保存先が `.github/copilot-instructions.md` か、対応する実行環境か |
-| Skillを使ってくれない | `name`、`description`、保存場所、明示的な呼び出し |
-| テストしたと言うが怪しい | **実行したコマンドとログ**を確認する |
-| 毎回同じ誤実装をする | 誤りをInstructions、Skill、テストのどこに残すべきか |
-| 設定ファイルが巨大になる | 共通ルール、対象固有ルール、作業手順に分ける |
-
-**実行を必須にしたいテストはCIへ**置き、失敗した変更は取り込めない設定にします。InstructionsやSkillに記載するだけでは、実行は保証されません。
-
-<small>参考：[対応環境の公式一覧](https://docs.github.com/en/copilot/reference/custom-instructions-support)、[VS CodeのSkill利用](https://code.visualstudio.com/docs/agent-customization/agent-skills)</small>
-
-<!-- 発表メモ：約1分20秒。Copilot ChatにはAgentやAskなどのモードがある。ファイル操作やコマンド実行が必要ならAgentモードを使う。組織のポリシーや権限により、利用できるツールが少ない場合がある。 -->
-
----
-
 # 9. 来週からチームで試すなら
 
 ### 小さく始める3ステップ
 
 1. **よくある失敗を3つ集める**：間違った確認コマンド、テーマ変更で見えない配色、テスト実行漏れなど
-2. **一つだけファイル化する**：まずInstructions。繰り返す作業ならSkillも作る
+2. **適した機能に残す**：共通ルールはInstructions、作業固有の知識はSkills、イベントでの実行はHooks
 3. **検証結果を残す**：実際にテストを実行したか、人の修正がどこで必要だったか
 
 **今日の結論**
 
 > Copilotに毎回同じ注意をするなら、その注意はチャットではなく**リポジトリに残す**。  
-> 「検証して」と頼むなら、**確認に使うコマンドやツールを決める**。
+> 確認方法はInstructions／Skillsに残し、イベントで自動実行する処理は**Hooksに設定する**。
 
-**VS Codeの公開ファイルと対応機能の詳細は、下記の出典を参照してください。**
+**主な出典**
 
 - [Microsoft VS CodeのInstructions](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md)
 - [Microsoft VS Codeの共通Instructions](https://github.com/microsoft/vscode/blob/main/.github/copilot-instructions.md)
 - [Microsoft VS Codeの配色Skill](https://github.com/microsoft/vscode/blob/main/.github/skills/ux-theming/SKILL.md)
 - [VS CodeのAgent Skillsの使い方](https://code.visualstudio.com/docs/agent-customization/agent-skills)
+- [VS CodeのHooksの設定](https://code.visualstudio.com/docs/agent-customization/hooks)
 
 <!-- 発表メモ：約1分。次回、失敗を見つけたときに「今回は言い直す」か「ルールやテストに反映する」かを意識してもらう。説明はここで終了し、残りは質疑に使う。 -->
