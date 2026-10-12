@@ -111,9 +111,9 @@ Instructionsは常時または対象ファイルに応じて適用し、Skills�
 
 # 4.1 VS Codeの実例：検証方法とその理由
 
-**場面**：VS Codeの開発者が、本体のソースを実行・配布できる形に変換する「ビルド用プログラム」を変更します。
+**場面**：VS Codeの開発者が、ソースの変換などを行う「ビルドスクリプト」を変更します。**Makefileに相当する役割**を、ここではTypeScriptで実装しています。
 
-**確認したいこと**：変更後のプログラムで、ソースをJavaScriptに変換できるか。
+**確認したいこと**：変更後のスクリプトで、ソースをJavaScriptに変換できるか。
 
 **Instructionsの指示**：この確認にはVS Code全体のビルドは不要。変換処理を次のコマンドで直接動かします。
 
@@ -127,7 +127,7 @@ node build/next/index.ts transpile --out out-test
 
 <small>出典：[buildNext.instructions.md — Validating Changes](https://github.com/microsoft/vscode/blob/main/.github/instructions/buildNext.instructions.md#important-validating-changes)。実ファイルにはbundleの検証コマンドも記載。</small>
 
-<!-- 発表メモ：約50秒。普段VS Codeで自分のアプリを開発する場面ではなく、VS Code自体を開発する場面。本体のコードと、本体を変換・結合するビルド用のコードがある。今回は後者を変更し、その変換処理を直接動かして確認する。node build/next/index.tsがプログラムの起動、transpileが処理の選択、--outが出力先。「全体ビルドでは確認できない」とは断定しない。原文は全体ビルドが不要だと説明している。applyTo: 'build/next/**'で対象ファイルを指定している。実演は行わない。 -->
+<!-- 発表メモ：約50秒。普段VS Codeで自分のアプリを開発する場面ではなく、VS Code自体を開発する場面。Makefileにコンパイルやファイルのコピーなどを定義するのと同様に、ここではTypeScriptでビルド処理を実装している。今回はそのスクリプトを変更し、変換処理を直接動かして確認する。node build/next/index.ts transpileは、役割としてmake transpileのように処理を選んで実行するもの。--outは出力先。「全体ビルドでは確認できない」とは断定しない。原文は全体ビルドが不要だと説明している。applyTo: 'build/next/**'で対象ファイルを指定している。実演は行わない。 -->
 
 ---
 
